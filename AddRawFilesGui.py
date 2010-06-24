@@ -22,6 +22,7 @@ from PyQt4.QtGui import *
 import logging
 import sys
 import os
+import shutil
 
 DEFAULT_PATH = '/Users/Cameron/Documents/AA - ISIS Docs/Experiments/'
 
@@ -102,6 +103,7 @@ class addRawDoc(QObject):
         if self.useincomingfilename:
             l = self.getRunlist()[:]
             l.sort()
+            print l
             return l[-1]
         elif self.outname:
             return self.outname
@@ -168,6 +170,16 @@ class addRawDoc(QObject):
             filename = os.path.join(inpath, str(run))
             LoadRaw(Filename=filename, OutputWorkspace="wtemp")
             Plus("added", "wtemp", "added")
+
+        # Because we require a matched log file I need to grab one and
+        # and write it out with a matching name. Don't need to worry
+        # about whether inpath = outpath because that is taken care of
+        # earlier by getOutpath()
+
+        logfilename = str(filenamelist[-1]).rstrip('.raw') + '.log'
+        logfilepath = os.path.join(inpath, logfilename)
+        outlogfilepath = os.path.join(outpath, (name + '.log'))
+        shutil.copyfile(logfilepath, outlogfilepath)    
 
         # Write out the new nexus file and clean up
         SaveNexus("added", os.path.join(outpath, (name +'.nxs'))) 
@@ -515,7 +527,13 @@ class addFileWidget(QWidget):
         self.doc.setOutpath(self.outpathlineedit.text())
 
     def viewDoAddition(self):
-        self.doc.addRuns()
+
+        # Before doing the addition check that the runlist has been updated
+        if self.menus.getRunList():
+            self.doc.setRunlist(self.menus.getRunList())
+            self.doc.addRuns()
+        else:
+            pass
 
 ##############################
 #
