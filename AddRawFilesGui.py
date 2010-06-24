@@ -164,6 +164,7 @@ class addRawDoc(QObject):
         # Load the first run in
         filename = os.path.join(inpath, str(filenamelist[0])) 
         LoadRaw(Filename=filename, OutputWorkspace="added")
+        LoadSampleDetailsFromRaw("added", filename)
 
         # Then sequentially load and add each additional run
         for run in filenamelist[1:-1]:
