@@ -24,4 +24,45 @@ import sys
 import os
 import shutil
 
+class AbstractScatteringRun(Object):
+    """An abstract class to represent SANS runs
 
+    The abstract class will provide internal data elements for run
+    number, filename, and translation between them. It also provides
+    the generic loading and saving methods.
+    """
+
+    def __init__(self):
+        pass
+
+class Trans(abstractScatteringRun):
+    """A class to represent transmission measurements
+    """
+
+    def __init_(self):
+        pass
+
+class Sans(abstractScatteringRun):
+    """A class representing SANS measurements
+    """
+    
+    def __init__(self):
+        pass
+
+class AbstractReduction(Object):
+    """An abstract class representing reduction processes
+
+    The abstract class provides the internal data elements for
+    SANS, TRANS, Background, and direct beam runs. These internal
+    data elements are provided by the earlier classes.
+    """
+
+    def __init__(self):
+        pass
+
+class 1DReduction(AbstractReduction):
+    """Class representing a standard 1D reduction
+    """
+
+    def __init__(self):
+        pass
