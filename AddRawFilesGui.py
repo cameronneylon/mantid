@@ -101,7 +101,7 @@ class addRawDoc(QObject):
     def getOutname(self):
         if self.useincomingfilename:
             l = self.getRunlist()[:]
-            l.sort
+            l.sort()
             return l[-1]
         elif self.outname:
             return self.outname
@@ -173,6 +173,9 @@ class addRawDoc(QObject):
         SaveNexus("added", os.path.join(outpath, (name +'.nxs'))) 
         mantid.deleteWorkspace("wtemp")
         mantid.deleteWorkspace("added")
+        print self.runlist
+        self.runlist = []
+        print self.runlist
 
     def getFilelistForMenu(self):
         """Method for getting a sanitised filename list for menus in GUI
@@ -546,7 +549,7 @@ def main(args):
     app.exec_()
 
 
-if __name__=="__main__":
+if 1==0:
     main(sys.argv)
 
 else:
