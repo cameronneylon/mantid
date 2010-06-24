@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-#from mantidsimple import *
+from mantidsimple import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import logging
@@ -558,26 +558,14 @@ class addFileWidget(QWidget):
                 self.outnamelineedit.setFocus()
 
 
-def main(args):
-    LOG_FILENAME = '/logging.out'
-    logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
-    app=QApplication(args)
-    doc = addRawDoc()
-    docview = addFileWidget(doc)
-    docview.show()
-    app.exec_()
-
-
-if 1==0:
-    main(sys.argv)
-
-else:
-    app=QApplication.instance()
-    doc = addRawDoc()
-    docview = addFileWidget(doc)
-    docview.show()
-
-    
-   
+app = QApplication.instance()
+if app == None:
+   app = QtGui.QApplication(sys.argv) 
+   LOG_FILENAME = '/logging.out'
+   logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
+  
+doc = addRawDoc()
+docview = addFileWidget(doc)
+docview.show()  
 
     
