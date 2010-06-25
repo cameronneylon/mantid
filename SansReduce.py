@@ -653,10 +653,10 @@ class AbstractReduction:
         and reset the local variable.
         """
 
-        if self.gravity == SANSReduction._VERBOSE_:
+        if self.verbose == SANSReduction._VERBOSE_:
             return self.verbose
         else:
-            self.setGravity(SANSReduction._VERBOSE_)
+            self.setVerbose(SANSReduction._VERBOSE_)
             return self.verbose
     
 
@@ -669,6 +669,8 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
         AbstractReduction.__init__(self)
         self.setInstrument('SANS2D')
         self.setDetector('rear-detector')
+        self.setGravity(True)
+        self.setVerbose(False)
 
 
     #######################
