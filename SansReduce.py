@@ -1,4 +1,4 @@
-# SansReduce: A GUI utility for SANS 1D data reduction in the Mantid
+# SansReduce: A wrapping library for SANS data reduction in the Mantid
 # Neutron Scattering Analysis framework
 #
 # Copyright (C) 2010 Cameron Neylon
@@ -23,7 +23,10 @@ import sys
 import os
 import shutil
 
-import SANSReduction
+try:
+    import SANSReduction
+except ImportError: #If testing outside of Mantid use the test module instead
+    import SANSReduction_for_testing_only as SANSReduction
 
 # For testing outside of the Mantid environment
 try:
