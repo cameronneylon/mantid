@@ -20,6 +20,7 @@ import logging
 import sys
 import os
 import shutil
+import PyQt4.QtCore
 
 try:
     import SANSReduction
@@ -36,8 +37,12 @@ except ImportError:
         pass
     def LoadSampleDetailsFromRaw(wsname, filename):
         pass
+    def UserPath(string):
+        pass
+    def MaskFile(string):
+        pass
 
-class AbstractScatteringRun:
+class AbstractScatteringRun(object):
     """An abstract class to represent SANS runs
 
     The abstract class will provide internal data elements for run
@@ -74,6 +79,7 @@ class AbstractScatteringRun:
         if input:
             self.mungeNames(input)
 
+
     ###############
     # Init Methods#
     ###############
@@ -97,7 +103,7 @@ class AbstractScatteringRun:
     #####################
     def setRunnumber(self, runno):
         try:
-            assert type(runno) == str or type(runno) == QString
+            assert type(runno) == str or type(runno) == PyQt4.QtCore.QString
 
         except AssertionError:
             raise TypeError('Run number must be a string')
@@ -111,7 +117,7 @@ class AbstractScatteringRun:
 
     def setExt(self, string):
         try:
-            assert type(string) == str or type(string) == QString
+            assert type(string) == str or type(string) == PyQt4.QtCore.QString
             assert string == 'nxs' or string == 'raw'
 
         except AssertionError:
@@ -124,7 +130,7 @@ class AbstractScatteringRun:
 
     def setFilename(self, string):
         try:
-            assert type(string) == str or type(string) == QString
+            assert type(string) == str or type(string) == PyQt4.QtCore.QString
         except AssertionError:
             raise TypeError('Filename must be a string or Qstring')
 
@@ -139,7 +145,7 @@ class AbstractScatteringRun:
 
     def setPath(self, string):
         try:
-            assert type(string) == str or type(string) == QString
+            assert type(string) == str or type(string) == PyQt4.QtCore.QString
         except AssertionError:
             raise TypeError('Path must be a string or Qstring')
 
@@ -158,7 +164,7 @@ class AbstractScatteringRun:
         """
 
         try:
-            assert type(string) == str or type(string) == QString
+            assert type(string) == str or type(string) == PyQt4.QtCore.QString
         except AssertionError:
             raise TypeError('Workspace name must be a string or Qstring')
 
@@ -323,13 +329,19 @@ class AbstractReduction:
 
     The abstract class provides the internal data elements for
     SANS, TRANS, Background, and direct beam runs. These internal
-    data elements are provided by the earlier classes.
+    data elements are provided by the earlier classes. Reductions
+    can be initialised either we pre-existing SANS and TRANS objects
+    or with run numbers or filenames to represent those objects.
+    Subclasses should pass the relevant variables to the abstract
+    class init methods or if this is not desired overwrite the relevant
+    init methods.
     """
 
-    def __init__(self):
-        self.initSansRun()
-        self.initBackgroundRun()
-        self.initDirectBeamRun()
+    def __init__(self, sansrun = None, bgdrun = None, directbeamrun = None,
+                 sanstrans = None, bgdtrans = None):
+        self.initSansRun(sansrun, sanstrans)
+        self.initBackgroundRun(bgdrun, bgdtrans)
+        self.initDirectBeamRun(directbeamrun)
         self.initInstrument()
         self.initMaskfile()
         self.initWavRangeLow()
@@ -341,23 +353,76 @@ class AbstractReduction:
         self.__instrumentlist = ['SANS2D', 'LOQ', 'ZOOM']
         self.__detectorlist = ['front-detector', 'rear-detector']
 
+
+
     ###############
     # Init Methods#
     ###############
-    def initSansRun(self):
-        self.sans = None
+    def initSansRun(self, sansrun, sanstrans):
+        """Initialisation method for the SANS element of the reduction
 
-    def initBackgroundRun(self):
-        self.background = None
+        If a sansrun has been passed to the init method then check 
+        whether it is a string or an AbstractSans object. If a str
+        then initialise a new AbstractSans object, with trans if
+        avaiable. If it is an AbstractSans object then set self.sans
+        to be that object. Otherwise set self.sans to be None.
+        """
 
-    def initDirectBeamRun(self):
-        self.directbeam = None
+        if sansrun:
+            if type(sansrun) == str:
+                self.sans = AbstractSans(sansrun, sanstrans)
+            elif type(sansrun) == SansReduce.AbstractSans:
+                self.sans = sansrun
+
+        else:
+            self.background = None
+
+    def initBackgroundRun(self, bgdrun, bgdtrans):
+        """Initialisation method for the background for the reduction
+
+        If a bgdrun has been passed to the init method then check 
+        whether it is a string or an AbstractSans object. If a str
+        then initialise a new AbstractSans object, with trans if
+        available. If it is an AbstractSans object then set self.sans
+        to be that object. Otherwise set self.background to be None.
+        """
+
+        if bgdrun:
+            if type(bgdrun) == str:
+                self.background = AbstractSans(bgdrun, bgdtrans)
+            elif type(bgdrun) == SansReduce.AbstractSans:
+                self.background = bgdrun
+
+        else:
+            self.background = None
+
+    def initDirectBeamRun(self, directbeamrun):
+        """Initialisation method for the direct beam tranmission
+
+        If a directbeam has been passed to the init method then check 
+        whether it is a string or an AbstractSans object. If a str
+        then initialise a new Trans object. If it is a Trans object then 
+        set self.directbeam to be that object. Otherwise set 
+        self.directbeam to be None.
+        """
+
+        if directbeamrun:
+            if type(directbeamrun) == str:
+                self.directbeam = DirectBeam(directbeamrun)
+            elif type(directbeamrun) == SansReduce.DirectBeam:
+                self.directbeam = directbeamrun
+
+            else:
+                raise Warning("Direct beam needs to be of type 'DirectBeam'")
+
+        else:
+            self.directbeam = None
 
     def initInstrument(self):
         self.instrument = 'SANS2D'
 
     def initMaskfile(self):
-        self.maskfile = None
+        self.maskfile = object()
 
     def initWavRangeLow(self):
         self.wavrangelow = 2.0
@@ -452,6 +517,22 @@ class AbstractReduction:
     def getDirectBeam(self):
         return self.directbeam
 
+    def setPathForAllRuns(self, path):
+        """A convenience method to set paths to all runs to the same value
+        """
+        
+        path = str(path) # In case it is a QString or other object
+        try:
+            assert os.path.isdir(path)
+        except AssertionError:
+            raise ValueError('This does not appear to be a valid path')
+
+        self.sans.setPath(path)
+        self.background.setPath(path)
+        self.sans.trans.setPath(path)
+        self.background.trans.setPath(path)
+        self.directbeam.setPath(path)
+
     def setInstrument(self, instrument):
         """Function for setting the instrument
 
@@ -493,7 +574,7 @@ class AbstractReduction:
         detector = str(detector)
         try:
             assert type(detector) == str
-            assert instrument in self.__detectorlist
+            assert detector in self.__detectorlist
         except AssertionError:
             raise TypeError('Instrument must be "front-detector" or "rear-detector"')
 
@@ -519,13 +600,14 @@ class AbstractReduction:
             raise ValueError('Path to Maskfile is incorrect or broken!')
          
         self.maskfile = os.path.relpath(path)
-        self.maskfile.__directory, self.maskfile.__filename = os.path.split(self.maskfile)
-        self.maskfile.__abspath = os.path.abspath(path)
-        self.maskfile.__isabs = os.path.isabs(path)
-        self.maskfile.__currentdirwhenset = os.path.abspath('')
 
-        SANSReduction.UserPath(self.maskfile.__directory)
-        SANSReduction.MaskFile(self.maskfile.__filename)
+        self.__maskfile_directory, self.__maskfile_filename = os.path.split(self.maskfile)
+        self.__maskfile_abspath = os.path.abspath(path)
+        self.__maskfile_isabs = os.path.isabs(path)
+        self.__maskfile_currentdirwhenset = os.path.abspath('')
+
+        SANSReduction.UserPath(self.__maskfile_directory)
+        SANSReduction.MaskFile(self.__maskfile_filename)
 
     def getMaskfile(self, forceabs = False):
         """Method for returning the Maskfile path
@@ -539,8 +621,8 @@ class AbstractReduction:
             if os.path.isfile(self.maskfile):
                 return self.maskfile
 
-            elif os.path.isfile(self.maskfile.__abspath):
-                self.setMaskfile(os.path.relpath(self.maskfile.__abspath))
+            elif os.path.isfile(self.__maskfile__abspath):
+                self.setMaskfile(os.path.relpath(self.__maskfile_abspath))
                 return self.maskfile
 
             else:
@@ -548,10 +630,10 @@ class AbstractReduction:
 
         elif forceabs == True:
             if os.path.isfile(self.maskfile):
-                return os.path.asbpath(self.maskfile)
+                return os.path.abspath(self.maskfile)
 
-            elif os.path.isfile(self.maskfile.__abspath):
-                self.setMaskfile(os.path.relpath(self.maskfile.__abspath))
+            elif os.path.isfile(self.__maskfile_abspath):
+                self.setMaskfile(os.path.relpath(self.__maskfile_abspath))
                 return self.maskfile
 
             else:
@@ -569,7 +651,7 @@ class AbstractReduction:
         """
         
         # Convert to float if incoming is a string or QString
-        if (type(wavelength)) == str or (type(wavelength) == QString):
+        if (type(wavelength)) == str or (type(wavelength) == PyQt4.QtCore.QString):
             wavelength = float(str(wavelength))
         try:
             assert type(wavelength) == float or type(wavelength) == int
@@ -589,7 +671,7 @@ class AbstractReduction:
         """
 
         # Convert to float if incoming is a string or QString
-        if (type(wavelength) == str) or (type(wavelength) == QString):
+        if (type(wavelength) == str) or (type(wavelength) == PyQt4.QtCore.QString):
             wavelength = float(str(wavelength))  
         try:
             assert type(wavelength) == float or type(wavelength) == int
@@ -665,13 +747,16 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
     """Class representing a standard 1D reduction
     """
 
-    def __init__(self):
-        AbstractReduction.__init__(self)
+    def __init__(self, sansrun = None, bgdrun = None, directbeamrun = None,
+                 sanstrans = None, bgdtrans = None):
+        AbstractReduction.__init__(self, sansrun, 
+                                   bgdrun, directbeamrun, 
+                                   sanstrans, bgdtrans)
         self.setInstrument('SANS2D')
         self.setDetector('rear-detector')
         self.setGravity(True)
         self.setVerbose(False)
-
+            
 
     #######################
     #The reduction routine#
@@ -760,7 +845,7 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
         SANSReduction.DataPath(self.getSansRun().trans.getPath())
         SANSReduction.TransmissionSample(self.getSansRun().trans.getRunnumber()
                                          + '.' + 
-                                         self.getSansRun.trans.getExt(),
+                                         self.getSansRun().trans.getExt(),
                                          self.getDirectBeam().getRunnumber() +
                                          '.' + self.getDirectBeam().getExt())
 
@@ -773,7 +858,7 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
         SANSReduction.DataPath(self.getBackgroundRun().trans.getPath())
         SANSReduction.TransmissionCan(self.getBackgroundRun().trans.getRunnumber()
                                          + '.' + 
-                                         self.getBackgroundRun.trans.getExt(),
+                                         self.getBackgroundRun().trans.getExt(),
                                          self.getDirectBeam().getRunnumber() +
                                          '.' + self.getDirectBeam().getExt())
         
@@ -781,13 +866,12 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
         SANSReduction.UserPath(os.path.dirname(self.getMaskfile()))
         SANSReduction.MaskFile(os.path.basename(self.getMaskfile()))
 
-        # Find the beam center ###DO I REALLY NEED TO DO THIS?
-        SANSReduction.FindBeamCentre(50., 170., 2)
+        # Find the beam center ###DO I REALLY NEED TO DO THIS? ### Not if the maskfile is correct
+        # SANSReduction.FindBeamCentre(50., 170., 2)
 
         # DO THE REDUCTION!
         self.reducedworkspace = SANSReduction.WavRangeReduction(self.getWavRangeLow(),
-                                                                self.getWavRangeHigh(),
-                                                                NewTrans)
+                                                                self.getWavRangeHigh())
 
-        
+        return self.reducedworkspace
  

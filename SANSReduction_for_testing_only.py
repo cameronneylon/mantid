@@ -16,6 +16,7 @@
 # for the script to function. From the GUI, the tags will be replaced by the appropriate
 # information. 
 
+import os
 # The tags get replaced by input from the GUI
 # The workspaces
 SCATTER_SAMPLE = None
@@ -290,257 +291,25 @@ def Set2D():
 _SAMPLE_SETUP = None
 _SAMPLE_RUN = ''
 def AssignSample(sample_run, reload = True, period = -1):
-    _printMessage('AssignSample("' + sample_run + '")')
-    global SCATTER_SAMPLE, _SAMPLE_SETUP, _SAMPLE_RUN, _SAMPLE_N_PERIODS, PERIOD_NOS
-    
-    __clearPrevious(SCATTER_SAMPLE,others=[SCATTER_CAN,TRANS_SAMPLE,TRANS_CAN,DIRECT_SAMPLE,DIRECT_CAN])
-    _SAMPLE_N_PERIODS = -1
-    
-    if( sample_run.startswith('.') or sample_run == '' or sample_run == None):
-        _SAMPLE_SETUP = None
-        _SAMPLE_RUN = ''
-        SCATTER_SAMPLE = None
-        return '', '()'
-    
-    _SAMPLE_RUN = sample_run
-    SCATTER_SAMPLE,reset,logname,filepath, _SAMPLE_N_PERIODS = _assignHelper(sample_run, False, reload, period)
-    
-    _printMessage('Logname: ' + logname)
-    _printMessage('Filepath: ' + filepath)
-    if SCATTER_SAMPLE.getName() == '':
-        _issueWarning('Unable to load sans sample run, cannot continue.')
-        return '','()'
-    if reset == True:
-        _SAMPLE_SETUP = None
-    if (INSTR_NAME == 'SANS2D'):
-        global _MARKED_DETS_
-        _MARKED_DETS_ = []
-        logvalues = _loadDetectorLogs(logname,filepath)
-        if logvalues == None:
-            mtd.deleteWorkspace(SCATTER_SAMPLE.getName())
-            _issueWarning("Sample logs cannot be loaded, cannot continue")
-            return '','()'
-    else:
-        PERIOD_NOS["SCATTER_SAMPLE"] = period
-        return SCATTER_SAMPLE.getName(), None
-        
-    global FRONT_DET_Z, FRONT_DET_X, FRONT_DET_ROT, REAR_DET_Z, REAR_DET_X
-    FRONT_DET_Z = float(logvalues['Front_Det_Z'])
-    FRONT_DET_X = float(logvalues['Front_Det_X'])
-    FRONT_DET_ROT = float(logvalues['Front_Det_Rot'])
-    REAR_DET_Z = float(logvalues['Rear_Det_Z'])
-    REAR_DET_X = float(logvalues['Rear_Det_X'])
-
-    PERIOD_NOS["SCATTER_SAMPLE"] = period
-    return SCATTER_SAMPLE.getName(), logvalues
-
+    pass
 ########################### 
 # Set the scattering can raw workspace
 ########################### 
 _CAN_SETUP = None
 _CAN_RUN = ''
 def AssignCan(can_run, reload = True, period = -1):
-    _printMessage('AssignCan("' + can_run + '")')
-    global SCATTER_CAN, _CAN_SETUP, _CAN_RUN, _CAN_N_PERIODS, PERIOD_NOS
-    
-    __clearPrevious(SCATTER_CAN,others=[SCATTER_SAMPLE,TRANS_SAMPLE,TRANS_CAN,DIRECT_SAMPLE,DIRECT_CAN])
-    _CAN_N_PERIODS = -1
-    
-    if( can_run.startswith('.') or can_run == '' or can_run == None):
-        SCATTER_CAN.reset()
-        _CAN_RUN = ''
-        _CAN_SETUP = None
-        return '', '()'
-
-    _CAN_RUN = can_run
-    SCATTER_CAN ,reset, logname,filepath, _CAN_N_PERIODS = \
-        _assignHelper(can_run, False, reload, period)
-    if SCATTER_CAN.getName() == '':
-        _issueWarning('Unable to load sans can run, cannot continue.')
-        return '','()'
-    if reset == True:
-        _CAN_SETUP  = None
-    if (INSTR_NAME == 'SANS2D'):
-        global _MARKED_DETS_
-        _MARKED_DETS_ = []
-        logvalues = _loadDetectorLogs(logname,filepath)
-        if logvalues == None:
-            _issueWarning("Can logs could not be loaded, using sample values.")
-            return SCATTER_CAN.getName(), "()"
-    else:
-        PERIOD_NOS["SCATTER_CAN"] = period
-        return SCATTER_CAN.getName(), ""
-    
-    smp_values = []
-    smp_values.append(FRONT_DET_Z + FRONT_DET_Z_CORR)
-    smp_values.append(FRONT_DET_X + FRONT_DET_X_CORR)
-    smp_values.append(FRONT_DET_ROT + FRONT_DET_ROT_CORR)
-    smp_values.append(REAR_DET_Z + REAR_DET_Z_CORR)
-    smp_values.append(REAR_DET_X + REAR_DET_X_CORR)
-
-    PERIOD_NOS["SCATTER_CAN"] = period
-    # Check against sample values and warn if they are not the same but still continue reduction
-    if len(logvalues) == 0:
-        return  SCATTER_CAN.getName(), logvalues
-    
-    can_values = []
-    can_values.append(float(logvalues['Front_Det_Z']) + FRONT_DET_Z_CORR)
-    can_values.append(float(logvalues['Front_Det_X']) + FRONT_DET_X_CORR)
-    can_values.append(float(logvalues['Front_Det_Rot']) + FRONT_DET_ROT_CORR)
-    can_values.append(float(logvalues['Rear_Det_Z']) + REAR_DET_Z_CORR)
-    can_values.append(float(logvalues['Rear_Det_X']) + REAR_DET_X_CORR)
-
-
-    det_names = ['Front_Det_Z', 'Front_Det_X','Front_Det_Rot', 'Rear_Det_Z', 'Rear_Det_X']
-    for i in range(0, 5):
-        if math.fabs(smp_values[i] - can_values[i]) > 5e-04:
-            _issueWarning(det_names[i] + " values differ between sample and can runs. Sample = " + str(smp_values[i]) + \
-                              ' , Can = ' + str(can_values[i]))
-            _MARKED_DETS_.append(det_names[i])
-    
-    return SCATTER_CAN.getName(), logvalues
-
+    pass
 ########################### 
 # Set the trans sample and measured raw workspaces
 ########################### 
 def TransmissionSample(sample, direct, reload = True, period = -1):
-    _printMessage('TransmissionSample("' + sample + '","' + direct + '")')
-    global TRANS_SAMPLE, DIRECT_SAMPLE, _TRANS_SAMPLE_N_PERIODS, DIRECT_SAMPLE_N_PERIODS
-    
-    __clearPrevious(TRANS_SAMPLE,others=[SCATTER_SAMPLE,SCATTER_CAN,TRANS_CAN,DIRECT_SAMPLE,DIRECT_CAN])
-    __clearPrevious(DIRECT_SAMPLE,others=[SCATTER_SAMPLE,SCATTER_CAN,TRANS_SAMPLE,TRANS_CAN,DIRECT_CAN])
-    
-    trans_ws, dummy1, dummy2, dummy3, _TRANS_SAMPLE_N_PERIODS = \
-        _assignHelper(sample, True, reload, period)
-    TRANS_SAMPLE = trans_ws.getName()
-    
-    direct_sample_ws, dummy1, dummy2, dummy3, DIRECT_SAMPLE_N_PERIODS = \
-        _assignHelper(direct, True, reload, period)
-    DIRECT_SAMPLE = direct_sample_ws.getName()
-    
-    return TRANS_SAMPLE, DIRECT_SAMPLE
-
+    pass
 ########################## 
 # Set the trans sample and measured raw workspaces
 ########################## 
 def TransmissionCan(can, direct, reload = True, period = -1):
-    _printMessage('TransmissionCan("' + can + '","' + direct + '")')
-    global TRANS_CAN, DIRECT_CAN, TRANS_CAN_N_PERIODS, DIRECT_CAN_N_PERIODS
-    
-    __clearPrevious(TRANS_CAN,others=[SCATTER_SAMPLE,SCATTER_CAN,TRANS_SAMPLE,DIRECT_SAMPLE,DIRECT_CAN])
-    __clearPrevious(DIRECT_CAN,others=[SCATTER_SAMPLE,SCATTER_CAN,TRANS_SAMPLE,TRANS_CAN,DIRECT_SAMPLE])
-
-    can_ws, dummy1, dummy2, dummy3, TRANS_CAN_N_PERIODS = \
-        _assignHelper(can, True, reload, period)
-    TRANS_CAN = can_ws.getName()
-    if direct == '' or direct == None:
-        DIRECT_CAN, DIRECT_CAN_N_PERIODS = DIRECT_SAMPLE, DIRECT_SAMPLE_N_PERIODS
-    else:
-        direct_can_ws, dummy1, dummy2, dummy3, DIRECT_CAN_N_PERIODS = \
-            _assignHelper(direct, True, reload, period)
-        DIRECT_CAN = direct_can_ws.getName()
-    return TRANS_CAN, DIRECT_CAN
-
+    pass
 # Helper function
-def _assignHelper(run_string, is_trans, reload = True, period = -1):
-    # flag initialised to catch conventional filenames
-    flag=None
-    if run_string == '' or run_string.startswith('.'):
-        return SANSUtility.WorkspaceDetails('', -1),True,'','', -1
-    pieces = run_string.split('.')
-    if len(pieces) != 2 :
-         _fatalError("Invalid run specified: " + run_string + ". Please use RUNNUMBER.EXT format")
-    else:
-        run_no = pieces[0]
-        ext = pieces[1]
-    if run_no == '':
-        return SANSUtility.WorkspaceDetails('', -1),True,'','', -1
-        
-    if INSTR_NAME == 'LOQ':
-        field_width = 5
-    else:
-        field_width = 8
-        
-    fullrun_no,logname,shortrun_no = padRunNumber(run_no, field_width)
-    
-    if is_trans:
-        wkspname =  shortrun_no + '_trans_' + ext.lower()
-    else:
-        wkspname =  shortrun_no + '_sans_' + ext.lower()
-
-    if reload == False and mtd.workspaceExists(wkspname):
-        return WorkspaceDetails(wkspname, shortrun_no),False,'','', -1
-
-    basename = INSTR_NAME + fullrun_no
-    filename = os.path.join(DATA_PATH,basename)
-
-    # If a filename that matches the input string exists then assume that is the correct file
-    # to load and that a matching log file exists. TODO Check that the log file really does
-    # exist.
-    if os.path.exists(os.path.join(DATA_PATH, run_string)):
-        flag = 1
-        filename = os.path.join(DATA_PATH, run_string).rstrip('.nxs')
-        _printMessage('_assignHelper: filename: ' + filename)
-        logname = run_string.rstrip('.nxs')
-        _printMessage('_assignHelper: logname: ' + logname)
-
-    # Workaround so that the FileProperty does the correct searching of data paths if this file doesn't exist
-    if not os.path.exists(filename + '.' + ext):
-        filename = basename
-    if period <= 0:
-        period = 1
-    if is_trans:
-        try:
-            if INSTR_NAME == 'SANS2D' and int(shortrun_no) < 568:
-                dimension = SANSUtility.GetInstrumentDetails(INSTR_NAME,DETBANK)[0]
-                specmin = dimension*dimension*2
-                specmax = specmin + 4
-            else:
-                specmin = None
-                specmax = 8
-                
-            [filepath, wkspname, nPeriods] = \
-               _loadRawData(filename, wkspname, ext, specmin, specmax, period)
-        except RuntimeError, err:
-            _issueWarning(str(err))
-            return SANSUtility.WorkspaceDetails('', -1),True,'','', -1
-    else:
-        try:
-            [filepath, wkspname, nPeriods] = _loadRawData(filename, wkspname, ext, None, None, period)
-        except RuntimeError, details:
-            _issueWarning(str(details))
-            return SANSUtility.WorkspaceDetails('', -1),True,'','', -1
-            
-    inWS = SANSUtility.WorkspaceDetails(wkspname, shortrun_no)
-    # If the flag was set above...
-    if flag == 1:
-        return inWS, True, logname, filepath, nPeriods
-    # Otherwise do what was there before
-    else:
-        return inWS,True, INSTR_NAME + logname, filepath, nPeriods
-
-def padRunNumber(run_no, field_width):
-    nchars = len(run_no)
-    digit_end = 0
-    for i in range(0, nchars):
-        if run_no[i].isdigit():
-            digit_end += 1
-        else:
-            break
-    
-    if digit_end == nchars:
-        filebase = run_no.rjust(field_width, '0')
-        return filebase, filebase, run_no
-    else:
-        filebase = run_no[:digit_end].rjust(field_width, '0')
-        return filebase + run_no[digit_end:], filebase, run_no[:digit_end]
-
-def __clearPrevious(inWS, others = []):
-    if inWS != None:
-        if type(inWS) == SANSUtility.WorkspaceDetails:
-            inWS = inWS.getName()
-        if mtd.workspaceExists(inWS) and (not inWS in others):
-            mtd.deleteWorkspace(inWS)
 
 ##########################
 # Loader function
@@ -1211,95 +980,14 @@ def displayMaskFile():
 # Set up the sample and can detectors and calculate the transmission if available
 ##
 def _initReduction(xcentre = None, ycentre = None):
-    # *** Sample setup first ***
-    if SCATTER_SAMPLE == None:
-        exit('Error: No sample run has been set')
-
-    if xcentre == None or ycentre == None:
-        xcentre = XBEAM_CENTRE
-        ycentre = YBEAM_CENTRE
-
-    global _SAMPLE_SETUP	
-    if _SAMPLE_SETUP == None:
-        _SAMPLE_SETUP = _init_run(SCATTER_SAMPLE, [xcentre, ycentre], False)
-    
-    global _CAN_SETUP
-    if SCATTER_CAN.getName() != '' and _CAN_SETUP == None:
-        _CAN_SETUP = _init_run(SCATTER_CAN, [xcentre, ycentre], True)
-
-    # Instrument specific information using function in utility file
-    global DIMENSION, SPECMIN, SPECMAX
-    DIMENSION, SPECMIN, SPECMAX  = SANSUtility.GetInstrumentDetails(INSTR_NAME, DETBANK)
-
+    pass
     return _SAMPLE_SETUP, _CAN_SETUP
 
 ##
 # Run the reduction for a given wavelength range
 ##
 def WavRangeReduction(wav_start = None, wav_end = None, use_def_trans = DefaultTrans, finding_centre = False):
-    if wav_start == None:
-        wav_start = WAV1
-    if wav_end == None:
-        wav_end = WAV2
-
-    if finding_centre == False:
-        _printMessage('WavRangeReduction(' + str(wav_start) + ',' + str(wav_end) + ',' + str(use_def_trans) + ',' + str(finding_centre) + ')')
-        _printMessage("Running reduction for wavelength range " + str(wav_start) + '-' + str(wav_end))
-    # This only performs the init if it needs to
-    sample_setup, can_setup = _initReduction(XBEAM_CENTRE, YBEAM_CENTRE)
-
-    wsname_cache = sample_setup.getReducedWorkspace()
-    # Run correction function
-    if finding_centre == True:
-        final_workspace = wsname_cache.split('_')[0] + '_quadrants'
-    else:
-        final_workspace = wsname_cache + '_' + str(wav_start) + '_' + str(wav_end)
-    sample_setup.setReducedWorkspace(final_workspace)
-    # Perform correction
-    Correct(sample_setup, wav_start, wav_end, use_def_trans, finding_centre)
-
-    if can_setup != None:
-        tmp_smp = final_workspace+"_sam_tmp"
-        RenameWorkspace(final_workspace, tmp_smp)
-        # Run correction function
-        # was  Correct(SCATTER_CAN, can_setup[0], can_setup[1], wav_start, wav_end, can_setup[2], can_setup[3], finding_centre)
-        tmp_can = final_workspace+"_can_tmp"
-        can_setup.setReducedWorkspace(tmp_can)
-        # Can correction
-        Correct(can_setup, wav_start, wav_end, use_def_trans, finding_centre)
-        Minus(tmp_smp, tmp_can, final_workspace)
-
-        # Due to rounding errors, small shifts in detector encoders and poor stats in highest Q bins need "minus" the
-        # workspaces before removing nan & trailing zeros thus, beware,  _sc,  _sam_tmp and _can_tmp may NOT have same Q bins
-        if finding_centre == False:
-            ReplaceSpecialValues(InputWorkspace = tmp_smp,OutputWorkspace = tmp_smp, NaNValue="0", InfinityValue="0")
-            ReplaceSpecialValues(InputWorkspace = tmp_can,OutputWorkspace = tmp_can, NaNValue="0", InfinityValue="0")
-            if CORRECTION_TYPE == '1D':
-                SANSUtility.StripEndZeroes(tmp_smp)
-                SANSUtility.StripEndZeroes(tmp_can)
-        else:
-            mantid.deleteWorkspace(tmp_smp)
-            mantid.deleteWorkspace(tmp_can)
-            mantid.deleteWorkspace(final_workspace)
-                
-    # Crop Workspace to remove leading and trailing zeroes
-    if finding_centre == False:
-        # Replaces NANs with zeroes
-        ReplaceSpecialValues(InputWorkspace = final_workspace, OutputWorkspace = final_workspace, NaNValue="0", InfinityValue="0")
-        if CORRECTION_TYPE == '1D':
-            SANSUtility.StripEndZeroes(final_workspace)
-        # Store the mask file within the final workspace so that it is saved to the CanSAS file
-        AddSampleLog(final_workspace, "UserFile", MASKFILE)
-    else:
-        quadrants = {1:'Left', 2:'Right', 3:'Up',4:'Down'}
-        for key, value in quadrants.iteritems():
-            old_name = final_workspace + '_' + str(key)
-            RenameWorkspace(old_name, value)
-            AddSampleLog(value, "UserFile", MASKFILE)
-
-    # Revert the name change so that future calls with different wavelengths get the correct name
-    sample_setup.setReducedWorkspace(wsname_cache)
-    return final_workspace
+    return True
 
 ##
 # Init helper
@@ -1681,68 +1369,7 @@ def RunReduction(coords):
     return CalculateResidue()
 
 def FindBeamCentre(rlow, rupp, MaxIter = 10, xstart = None, ystart = None):
-    global XVAR_PREV, YVAR_PREV, ITER_NUM, RMIN, RMAX, XBEAM_CENTRE, YBEAM_CENTRE
-    RMIN = float(rlow)/1000.
-    RMAX = float(rupp)/1000.
-
-    if xstart == None or ystart == None:
-        XVAR_PREV = XBEAM_CENTRE
-        YVAR_PREV = YBEAM_CENTRE
-    else:
-        XVAR_PREV = xstart
-        YVAR_PREV = ystart
-
-    mantid.sendLogMessage("::SANS:: xstart,ystart="+str(XVAR_PREV*1000.)+" "+str(YVAR_PREV*1000.)) 
-    _printMessage("Starting centre finding routine ...")
-    # Initialize the workspace with the starting coordinates. (Note that this moves the detector to -x,-y)
-    _initReduction(XVAR_PREV, YVAR_PREV)
-
-    ITER_NUM = 0
-    # Run reduction, returning the X and Y sum-squared difference values 
-    _printMessage("Running initial reduction: " + str(XVAR_PREV*1000.)+ "  "+ str(YVAR_PREV*1000.))
-    oldX2,oldY2 = RunReduction([XVAR_PREV, YVAR_PREV])
-    XSTEP = 5.0/1000.
-    YSTEP = 5.0/1000.
-    # take first trial step
-    XNEW = XVAR_PREV + XSTEP
-    YNEW = YVAR_PREV + YSTEP
-    for ITER_NUM in range(1, MaxIter+1):
-        _printMessage("Iteration " + str(ITER_NUM) + ": " + str(XNEW*1000.)+ "  "+ str(YNEW*1000.))
-        newX2,newY2 = RunReduction([XNEW, YNEW])
-        if newX2 > oldX2:
-            XSTEP = -XSTEP/2.
-        if newY2 > oldY2:
-            YSTEP = -YSTEP/2.
-        if abs(XSTEP) < 0.1251/1000. and abs(YSTEP) < 0.1251/1000. :
-            _printMessage("::SANS:: Converged - check if stuck in local minimum!")
-            break
-        oldX2 = newX2
-        oldY2 = newY2
-        XNEW += XSTEP
-        YNEW += YSTEP
-	
-    if ITER_NUM == MaxIter:
-        _printMessage("::SANS:: Out of iterations, new coordinates may not be the best!")
-        XNEW -= XSTEP
-        YNEW -= YSTEP
-
-    
-    XBEAM_CENTRE = XNEW
-    YBEAM_CENTRE = YNEW
-    _printMessage("Centre coordinates updated: [" + str(XBEAM_CENTRE*1000.)+ ","+ str(YBEAM_CENTRE*1000.) + ']')
-    
-    # Reload the sample and can and reset the radius range
-    global _SAMPLE_SETUP
-    _assignHelper(_SAMPLE_RUN, False, PERIOD_NOS["SCATTER_SAMPLE"])
-    _SAMPLE_SETUP = None
-    if _CAN_RUN != '':
-        _assignHelper(_CAN_RUN, False, PERIOD_NOS["SCATTER_CAN"])
-        global _CAN_SETUP
-        _CAN_SETUP = None
-    
-    RMIN = DEF_RMIN
-    RMAX = DEF_RMAX
-
+    pass
 ##
 # Plot the results on the correct type of plot
 ##

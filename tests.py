@@ -284,8 +284,31 @@ class InitialAbstractReductionTests(unittest.TestCase):
         self.assertEqual(self.reduction.getSansRun().trans.getRunnumber(),
                          '3325')
 
+    def testReductionSetupWithRunnumbers(self):
+        self.reduction = SansReduce.AbstractReduction(
+                     '3333.nxs', # Sans run
+                     '3325.nxs', # Bgd run
+                     '3332.nxs', # direct beam
+                     '3328.nxs', # SANS transmission
+                     '3331.nxs') # Bgd transmission
+
+        self.assertEqual(self.reduction.getSansRun().getRunnumber(), '3333')
+        self.assertEqual(self.reduction.getSansRun().trans.getRunnumber(), '3328')
+        self.assertEqual(self.reduction.getSansRun().getExt(), 'nxs')
+        self.assertEqual(self.reduction.getDirectBeam().getRunnumber(), '3332')
+        self.assertEqual(self.reduction.getDirectBeam().getFilename(), 
+                         'SANS2D00003332')
+
+        self.reduction.getSansRun().setPath('test_data/')
+        self.assertEqual(self.reduction.getSansRun()._testFullPath(), True)
+
     def testMaskfile(self):
-        pass
+        self.reduction = SansReduce.AbstractReduction()
+        self.reduction.setMaskfile('test_data/MASKSANS2D_095B.txt')
+        self.assertEqual(self.reduction.getMaskfile(),
+                         'test_data/MASKSANS2D_095B.txt')
+        self.assertEqual(self.reduction.getMaskfile(forceabs=True),
+    '/Users/Cameron/Documents/Python/mantid/test_data/MASKSANS2D_095B.txt')
 
     def testWaveRanges(self):
         """Test for setters and getters of the WavRange variables
@@ -322,6 +345,22 @@ class InitialAbstractReductionTests(unittest.TestCase):
         self.reduction = SansReduce.AbstractReduction()
         self.reduction.setVerbose(True)
         self.assertEqual(self.reduction.getVerbose(), True)
+
+    def testReduction(self):
+        """Test of reduction process
+        """
+        self.reduction = SansReduce.Standard1DReductionSANS2DRearDetector(
+                     '3333.nxs', # Sans run
+                     '3325.nxs', # Bgd run
+                     '3332.nxs', # direct beam
+                     '3328.nxs', # SANS transmission
+                     '3331.nxs') # Bgd transmission
+        self.reduction.setMaskfile('test_data/MASKSANS2d_095B.txt')
+
+        self.assertRaises(Warning, self.reduction.doReduction)
+        
+        self.reduction.setPathForAllRuns('test_data/')
+        self.reduction.doReduction()
 
 if __name__ == '__main__':
     unittest.main()
