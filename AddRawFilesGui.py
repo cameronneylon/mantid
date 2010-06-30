@@ -103,8 +103,8 @@ class addRawDoc(QObject):
         if self.useincomingfilename:
             l = self.getRunlist()[:]
             l.sort()
-            print l
-            return l[-1]
+            name = 'SANS2D' + (8-len(l[-1])*'0' + l[-1] + '-add'
+            return name
         elif self.outname:
             return self.outname
         else:
@@ -377,7 +377,7 @@ class addFileWidget(QWidget):
         # Setup outgoing filename
         self.outnamelabel = QLabel('Output File Name')
         self.outnamelineedit = QLineEdit()
-        self.useincomingnamecheck = QCheckBox('Use highest run number?', self)
+        self.useincomingnamecheck = QCheckBox("Use highest run number plus '-add'?", self)
         self.grid.addWidget(self.outnamelabel, 2, 0)
         self.grid.addWidget(self.outnamelineedit, 2, 1)
         self.grid.addWidget(self.useincomingnamecheck, 2, 2)
