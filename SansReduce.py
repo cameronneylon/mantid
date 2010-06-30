@@ -77,7 +77,8 @@ class AbstractScatteringRun(object):
         self.initWorkspace()
     
         if input:
-            self.mungeNames(input)
+            if isdigit(input.rstrip('.nxs').rstrip('.raw').rstrip('-add')):
+                self.mungeNames(input)
 
 
     ###############
@@ -102,6 +103,14 @@ class AbstractScatteringRun(object):
     #Getters and Setters#
     #####################
     def setRunnumber(self, runno):
+        """Routine to set the Run number
+
+        Run number may include the modifier '-add' to indicate it is an
+        added file. This can be left in the run number and will in principle
+        be handled correctly through the code chain. TODO: This needs to be more
+        thoroughly tested than it had been thus far.
+        """
+
         try:
             assert type(runno) == str or type(runno) == PyQt4.QtCore.QString
 
@@ -212,9 +221,10 @@ class AbstractScatteringRun(object):
     def mungeNames(self, input = None):
         """Method for converting run numbers to filenames and vice versa
         
-        Method shouldn't in practice be required but provides a clean 
-        way of making sure that filenames, run number, path and 
-        extension are all consistent.
+        Method  provides a way of making sure that filenames, run number, 
+        path and extension are all consistent. Run numbers may include the
+        '-add' modifier and filenames may not have run numbers at all in 
+        some cases.
         """
 
         filename_prefix = 'SANS2D'
@@ -226,7 +236,7 @@ class AbstractScatteringRun(object):
                 self.setFilename(input)
 
             # If input is a run number with or without extension
-            elif input.rstrip('.nxs').rstrip('.raw').isdigit():
+            elif input.rstrip('.nxs').rstrip('.raw').rstrip('-add').isdigit():
                 # setRunnumber will strip the filetype extension
                 self.setRunnumber(input)
             else: pass
@@ -248,7 +258,7 @@ class AbstractScatteringRun(object):
 
 
         # If have a run number but not a filename then set the filename
-        # self. Runnumber is guaranteed not to have a filetype extension
+        # self.runnumber is guaranteed not to have a filetype extension
         if self.getRunnumber() and not self.getFilename():
             self.setFilename(filename_prefix + 
                             '0'*(8-len(self.getRunnumber())) +
@@ -599,7 +609,7 @@ class AbstractReduction:
         except AssertionError:
             raise ValueError('Path to Maskfile is incorrect or broken!')
          
-        self.maskfile = os.path.relpath(path)
+        self.maskfile = path
 
         self.__maskfile_directory, self.__maskfile_filename = os.path.split(self.maskfile)
         self.__maskfile_abspath = os.path.abspath(path)
