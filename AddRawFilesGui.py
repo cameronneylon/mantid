@@ -250,6 +250,7 @@ class menusWidget(QWidget):
 
         self.doc = doc
         self.menulist = []
+        self.titlelist = []
         self.grid = QGridLayout()
 
 
@@ -274,7 +275,9 @@ class menusWidget(QWidget):
 
     def addMenu(self):
         newmenu = QComboBox()
+        runtitle = QLabel()
         self.menulist.append(newmenu)
+        self.titlelist.append(runtitle)
         
         # If path is set then populate the menu
         newmenu.clear()
@@ -289,14 +292,15 @@ class menusWidget(QWidget):
             newmenu.addItem('Select a directory first')
             newmenu.setEnabled(False)
 
-
         # Connect signals to appropriate methods
         self.connect(newmenu, SIGNAL('currentIndexChanged(int)'),
                               self.emitRunMenuSelected)
 
         # Set in appropriate position and reposition +/- buttons
         self.grid.addWidget(newmenu,
-                            len(self.menulist)+1, 0)
+                            len(self.menulist), 0)
+        self.grid.addWidget(runtitle,
+                            len(self.menulist), 1)
         self.repositionPlusMinusButtons()
         self.minusbutton.setEnabled(True)
 
@@ -304,15 +308,8 @@ class menusWidget(QWidget):
         """Remove a menu when not needed any more
         """
         self.grid.removeWidget(self.menulist[-1])
+        self.grid.removeWidget(self.titlelist[-1])
         self.menulist.pop().destroy()
-
-        for menu in self.menulist:
-            self.grid.removeWidget(menu)
-
-        i=0
-        for menu in self.menulist:
-            i+=1
-            self.grid.addWidget(menu, i, 0)
 
         self.repositionPlusMinusButtons()
         self.setLayout(self.grid)
@@ -361,6 +358,14 @@ class menusWidget(QWidget):
         else:
             return False
             
+    def populateRunTitles(self, list):
+        try:
+            assert len(list) == len(self.menulist)
+        except AssertionError:
+            raise ValueError('Number of run titles and menus not the same!')
+
+        for i in len(self.titlelist):
+            self.titlelist[i].setText(list(i))
 
             
 class addFileWidget(QWidget):
