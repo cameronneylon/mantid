@@ -15,8 +15,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+try:
+    from mantidsimple import *
+except ImportError:
+    def LoadRaw(filename, outws):
+        pass
+    def LoadSampleDetailsFromFaw(ws, filename):
+        pass
 
-from mantidsimple import *
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
 import logging
@@ -40,6 +46,7 @@ class addRawDoc(QObject):
         self.outpath = ''
         self.filelist = []
         self.useincomingfilename = False
+        self.addtransflag = False
 
     def checkType(self, check, testtype):
 
@@ -103,7 +110,7 @@ class addRawDoc(QObject):
         if self.useincomingfilename:
             l = self.getRunlist()[:]
             l.sort()
-            name = 'SANS2D' + (8-len(l[-1])*'0' + l[-1] + '-add'
+            name = 'SANS2D' + (8-len(l[-1]))*'0' + l[-1] + '-add'
             return name
         elif self.outname:
             return self.outname
@@ -138,6 +145,9 @@ class addRawDoc(QObject):
 
     def getFilelist(self):
         return self.filelist
+
+    def setAddTransFlag(self, boolean):
+        self.addtransflag = boolean
       
 
 ##############################
@@ -161,15 +171,27 @@ class addRawDoc(QObject):
         outpath = str(self.getOutpath())
         name = str(self.getOutname())
 
-        # Load the first run in
+        # Load the first run in and get # of histograms
         filename = os.path.join(inpath, str(filenamelist[0])) 
         LoadRaw(Filename=filename, OutputWorkspace="added")
         LoadSampleDetailsFromRaw("added", filename)
+        numhists = mtd['added'].getNumberHistograms()
+        if numhists == 8 and self.addtransflag == False:
+            warning = 'Are you sure you want to add transmissions?'
+            self.emit(SIGNAL('sigDocWarning'), (warning, ))
+            return
 
         # Then sequentially load and add each additional run
         for run in filenamelist[1:-1]:
             filename = os.path.join(inpath, str(run))
             LoadRaw(Filename=filename, OutputWorkspace="wtemp")
+                               
+            if mtd['wtemp'].getNumberHistograms() != numhists:
+                warning = ("""Runs %s has different number of histograms.
+Can't add this run.""" % run)
+                self.emit(SIGNAL('sigDocFail'), (warning, ))
+                return
+                
             Plus("added", "wtemp", "added")
 
         # Because we require a matched log file I need to grab one and
@@ -186,9 +208,7 @@ class addRawDoc(QObject):
         SaveNexus("added", os.path.join(outpath, (name +'.nxs'))) 
         mantid.deleteWorkspace("wtemp")
         mantid.deleteWorkspace("added")
-        print self.runlist
         self.runlist = []
-        print self.runlist
 
     def getFilelistForMenu(self):
         """Method for getting a sanitised filename list for menus in GUI
@@ -450,6 +470,12 @@ class addFileWidget(QWidget):
 
         self.connect(self.doc, SIGNAL('sigDocUseIncomingChanged'),
                                self.toggleOutnameLineedit)
+
+        self.connect(self.doc, SIGNAL('sigDocWarning'),
+                               self.warningMessage)
+
+        self.connect(self.doc, SIGNAL('sigDocFail'),
+                               self.failMessage)
         
     def selectDirectoryDialog(self):
         """Triggers file dialog to select directory for upload"""
@@ -557,10 +583,26 @@ class addFileWidget(QWidget):
                 self.outnamelineedit.setText(self.doc.getOutname())
                 self.outnamelineedit.setFocus()
 
+    def warningMessage(self, warnmessage):
+        msgbox = QMessageBox.question(self,
+                            'QtMessageBox.question()', 
+                            str(warnmessage),
+                            QMessageBox.Yes | QMessageBox.Cancel)
+        if msgbox == QMessageBox.Yes:
+            self.doc.setAddTransFlag(True)
+            self.doc.addRuns()
+        elif msbox == QMessageBox.Cancel:
+            pass
+        else:
+            pass
+
+    def failMessage(self, warnmessage):
+        msgbox = QMessageBox.warning(self,
+                            'QtMessageBox.critical()', warnmessage)
 
 app = QApplication.instance()
 if app == None:
-   app = QtGui.QApplication(sys.argv) 
+   app = QApplication(sys.argv) 
    LOG_FILENAME = '/logging.out'
    logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
   
