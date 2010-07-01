@@ -182,13 +182,11 @@ class addRawDoc(QObject):
             return
 
         # Then sequentially load and add each additional run
-        for run in filenamelist[1:-1]:
+        for run in filenamelist[1:len(filenamelist)]:
             filename = os.path.join(inpath, str(run))
-            LoadRaw(Filename=filename, OutputWorkspace="wtemp")
-                               
+            LoadRaw(Filename=filename, OutputWorkspace="wtemp")                 
             if mtd['wtemp'].getNumberHistograms() != numhists:
-                warning = ("""Runs %s has different number of histograms.
-Can't add this run.""" % run)
+                warning = 'Run %s has wrong number of histograms' % run
                 self.emit(SIGNAL('sigDocFail'), (warning, ))
                 return
                 
@@ -584,21 +582,24 @@ class addFileWidget(QWidget):
                 self.outnamelineedit.setFocus()
 
     def warningMessage(self, warnmessage):
+        message = str(warnmessage).lstrip("('").rstrip("',)")
         msgbox = QMessageBox.question(self,
                             'QtMessageBox.question()', 
-                            str(warnmessage),
+                            message,
                             QMessageBox.Yes | QMessageBox.Cancel)
         if msgbox == QMessageBox.Yes:
             self.doc.setAddTransFlag(True)
             self.doc.addRuns()
-        elif msbox == QMessageBox.Cancel:
+        elif msgbox == QMessageBox.Cancel:
             pass
         else:
             pass
 
     def failMessage(self, warnmessage):
+        message = str(warnmessage).lstrip("(u'").rstrip("',)") + \
+                              '\nAddition cannot proceed'
         msgbox = QMessageBox.warning(self,
-                            'QtMessageBox.critical()', warnmessage)
+                            'QtMessageBox.critical()', message)
 
 app = QApplication.instance()
 if app == None:
