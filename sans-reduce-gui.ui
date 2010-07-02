@@ -104,7 +104,7 @@
     </property>
     <layout class="QGridLayout" name="gridLayout_2">
      <item row="0" column="0">
-      <widget class="QCheckBox" name="showRawCheckBox">
+      <widget class="QCheckBox" name="showRawCheckbox">
        <property name="text">
         <string>Show RAW</string>
        </property>
@@ -114,7 +114,7 @@
       </widget>
      </item>
      <item row="1" column="0">
-      <widget class="QCheckBox" name="showNexusCheckBox">
+      <widget class="QCheckBox" name="showNexusCheckbox">
        <property name="text">
         <string>Show Nexus</string>
        </property>
@@ -145,7 +145,7 @@
      <x>20</x>
      <y>10</y>
      <width>431</width>
-     <height>34</height>
+     <height>41</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -174,7 +174,7 @@
     <string>Reduce</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="queueReductionsCheckBox">
+  <widget class="QCheckBox" name="queueReductionsCheckbox">
    <property name="geometry">
     <rect>
      <x>330</x>
@@ -205,7 +205,7 @@
      </widget>
     </item>
     <item row="1" column="0">
-     <widget class="QCheckBox" name="outputCansSASCheckbox">
+     <widget class="QCheckBox" name="outputCanSASCheckbox">
       <property name="text">
        <string>Output CanSAS 1D</string>
       </property>
