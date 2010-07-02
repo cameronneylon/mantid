@@ -478,6 +478,14 @@ class AbstractReduction:
 
     def getSansRun(self):
         return self.sans
+
+    def setSansTrans(self, transrun):
+        """Convenience method for setting the transmission run"""
+
+        self.sans.trans.setRunnumber(transrun)
+
+    def getSansTrans(self):
+        return self.sans.trans
         
     def setBackgroundRun(self, input = None, transrun = None):
         """Method for setting and initialising the background run
@@ -505,6 +513,13 @@ class AbstractReduction:
 
     def getBackgroundRun(self):
         return self.background
+
+    def setBackgroundTrans(self, runnumber):
+        """Convenience method for setting the background transmission"""
+        self.background.trans.setRunnumber(runnumber)
+
+    def getBackgroundTrans(self):
+        return self.background.trans
 
     def setDirectBeam(self, input = None):
         """Method for setting and initialising the SANS run
