@@ -20,7 +20,7 @@
 #
 # Global Variables the user may wish to set
 #
-DEFAULT_IN_PATH = ''
+DEFAULT_IN_PATH = '/Users/Cameron/Documents/AA - ISIS Docs/Experiments/'
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -74,9 +74,14 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         self.useRunnumberForOutput = False
         self.blog = False
         self.queue = False
+        self.reductionQueue = []
         self.outPath = ''
 
         self._inPathFileList = ''
+
+    def initForNewDocAfterQueuing(self):
+        self.setSansRun()
+        self.setBackgroundRun()
 
     ###########################################
     # Additional getters and setters required #
@@ -94,7 +99,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if type(boolean) != bool:
             raise ValueError('Value must be True or False')
             return
-        self.showRawInMenus = bool
+        self.showRawInMenus = boolean
 
     def getShowRawInMenus(self):
         return self.getShowRawInMenus
@@ -103,9 +108,9 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if type(boolean) != bool:
             raise ValueError('Value must be True or False')
             return
-        self.showNexusInMenus = bool
+        self.showNexusInMenus = boolean
 
-    def getShowCanSASInMenus(self):
+    def getShowNexusInMenus(self):
         return self.showNexusInMenus
 
     def setOutputLOQ(self, boolean):
@@ -130,7 +135,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if type(boolean) != bool:
             raise ValueError('Value must be True or False')
             return
-        self.useRunnumberForOutput = bool
+        self.useRunnumberForOutput = boolean
 
     def getUseRunnumberForOutput(self):
         return self.useRunnumberForOutput
@@ -161,16 +166,94 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         directory.
         """
 
-        if type(string) != string or type(string) != QString:
+        if type(string) != string and type(string) != QString:
             raise TypeError("Path must be a string or QString")
             return
         self.outPath = str(string)
 
     def getOutPath(self):
-        return self.outPath
+        """If the outpath is set, return it, if not then return inPath
+        
+        OutPath can be either a filename or a directory depending on
+        how it has been set.
+        """
 
-    
+        if self.outPath:
+            return self.outPath
+        else:
+            return self.inPath
 
+    ################################
+    # Utility Methods for Document #
+    ################################
+
+    def includeRun(self, string):
+        if string.endswith('.raw') and self.getShowRawInMenus():
+            return True
+        elif string.endswith('.nxs') and self.getShowNexusInMenus():
+            return True
+        elif string.endswith('.nx5') and self.getShotNexusInMenus():
+            return True
+        else:
+            return False
+
+    def getRunListForMenu(self):
+        """Method for returning a list of runs for the menus"""
+
+        filesindir = os.listdir(self.getInPath())
+        files = filter(self.includeRun, filesindir)
+
+        files.sort()
+        filesformenu = []
+        for file in files:
+            file = file.lstrip('SANS2D0')
+            filesformenu.append(file)
+        return filesformenu
+
+    ############################
+    # Reduce and Queue Methods #
+    ############################
+
+    def doReduceOrQueue(self):
+        if self.queue:
+            self.queueReduction
+
+        else:
+            self.doSingleReduction
+
+    def queueReduction(self):
+        reductionToQueue = deepcopy(self)
+        self.reductionQueue.append(reductionToQueue)
+        self.initForNewDocAfterQueuing
+
+
+    def doSingleReduction(self):
+        """Method for doing a single reduction
+        """
+
+        # Do the actual reduction
+        reduced = self.doReduction()
+        targetdirectory, filename = os.path.split(self.getOutPath())
+        
+        # Construct a filename from run number if required
+        if self.useRunnumberForOutput:
+            filename = self.getSansRun().getRunnumber().rstrip('-add')
+
+        # Check the target directory and filename make sense
+        if not os.path.isdir(targetdirectory):
+            raise IOError("Target directory does not exist")
+        if not filename:
+            raise IOError("I don't have a filename to save to")
+
+        # Set up the path and write out the files, then clear workspaces
+        targetpath = os.path.join(targetdirectory, filename)
+        if self.outputLOQ:
+            SaveRKH(reduced, targetpath + '.LOQ')
+        if self.outputCanSAS:
+            SaveCanSAS1D(reduced, targetpath + '.xml')
+        mantid.clear()
+
+            
 class SansReduceView(QWidget):
     """The view for the SANS Reduce GUI
 
@@ -185,6 +268,7 @@ class SansReduceView(QWidget):
         """
         
         QWidget.__init__(self)
+        self.doc = doc
         # The ui from designer is setup as self.ui
         self.ui = Ui_Form()
         self.ui.setupUi(self)
@@ -279,14 +363,29 @@ class SansReduceView(QWidget):
         ###########################################
 
         # TODO Catch state changes that might be caused by
-        # scripting of the document
+        # scripts running against the document
 
     ##############################
     # GUI initialisation Methods #
     ##############################
 
     def initMenus(self):
-        pass
+        runlist = self.doc.getRunListForMenu()
+        menulist = [self.ui.sansRunMenu,
+                    self.ui.sansTransMenu,
+                    self.ui.bgdRunMenu,
+                    self.ui.bgdTransMenu,
+                    self.ui.directBeamRunMenu]
+
+        for menu in menulist:
+            menu.clear()
+
+        self.ui.directBeamRunMenu.addItem("Direct Beam Run")
+        self.ui.directBeamRunMenu.setCurrentIndex(0)
+        for run in runlist:
+            for menu in menulist:
+                menu.addItem(run)
+
     ####################################
     #Method definitions for GUI actions#
     ####################################
@@ -304,7 +403,8 @@ class SansReduceView(QWidget):
 
         self.doc.setInPath(qstring)
         self.doc.setPathForAllRuns(self.doc.getInPath())
-        self.ui.inPathLineEdit.setText(directory)
+        self.ui.inPathLineEdit.setText(qstring)
+        self.initMenus()
 
     def setSansRun(self):
         """Set the run from the current menu selection"""
@@ -331,7 +431,9 @@ class SansReduceView(QWidget):
             self.doc.setShowRawInMenus(True)
         else:
             raise TypeError('Checkbox should be sending 0 or 2')
-
+        
+        self.initMenus()
+        
     def showNexusCheckStateChanged(self, integer):
         """Reset the menus to show required input files"""
         logging.debug('SRGui: Show Nexus Checkbox activated: ' + str(integer))
@@ -341,6 +443,8 @@ class SansReduceView(QWidget):
             self.doc.setShowNexusInMenus(True)
         else:
             raise TypeError('Checkbox should be sending 0 or 2')
+
+        self.initMenus()
 
     def selectMaskFileDialog(self):
         """Select and set the mask file"""
@@ -355,7 +459,7 @@ class SansReduceView(QWidget):
         """Set the direct beam from the menu selection"""
         self.doc.setDirectBeam(self.ui.directBeamRunMenu.currentText())
 
-    def outputLOQCheckStateChanged(self, state):
+    def outputLOQCheckStateChanged(self, integer):
         """Set whether a LOQ file will be output"""
         logging.debug('SRGui: Output LOQ Checkbox activated: ' + str(integer))
         if integer == 0:
@@ -365,7 +469,7 @@ class SansReduceView(QWidget):
         else:
             raise TypeError('Checkbox should be sending 0 or 2')
 
-    def outputCanSASCheckStateChanged(self, state):
+    def outputCanSASCheckStateChanged(self, integer):
         """Set whether a CanSAS file will be output"""
         logging.debug('SRGui: Output CanSAS Checkbox activated: ' 
                         + str(integer))
@@ -376,17 +480,20 @@ class SansReduceView(QWidget):
         else:
             raise TypeError('Checkbox should be sending 0 or 2')
 
-    def useRunnumberCheckStateChanged(self, state):
+    def useRunnumberCheckStateChanged(self, integer):
         """Set whether the Runnumber will be used as filename"""
         logging.debug('SRGui: Use runno Checkbox activated: ' + str(integer))
         if integer == 0:
             self.doc.setUseRunnumberForOutput(False)
+            self.ui.outPathPushButton.setText("Output filename...")
         elif integer == 2:
             self.doc.setUseRunnumberForOutput(True)
+            self.ui.outPathPushButton.setText("Output directory...")
+
         else:
             raise TypeError('Checkbox should be sending 0 or 2')
 
-    def blogReductionCheckStateChanged(self, state):
+    def blogReductionCheckStateChanged(self, integer):
         """Set whether the output will be blogged
 
         This checkbox will need to open a new widget window for
@@ -400,19 +507,37 @@ class SansReduceView(QWidget):
             raise TypeError('Checkbox should be sending 0 or 2')
 
     def setOutPathDialog(self):
-        """Trigger a dialog for setting the output path"""
-        outfilepath = QFileDialog.getSaveFileName(self, 
-                    'Open Directory',
-                    self.doc.getInPath())
-        self.doc.setOutPath(outfilepath)
+        """Trigger a dialog for setting the output path
 
-    def queueReductionsCheckStateChanged(self, state):
+        If the filename is set to be taken from the runnumber then
+        a directory selection dialog is presented. Otherwise a save
+        file dialog is given. The path is given the same in both 
+        cases and we will clean up when we are ready to write the
+        file out. Extensions will be cleaned up at that point as 
+        well.
+        """
+  
+        if self.doc.getUseRunnumberForOutput():
+            outfilepath = QFileDialog.getExistingDirectory(self, 
+                    'Select Directory',
+                    self.doc.getInPath())
+
+        else:
+            outfilepath = QFileDialog.getSaveFileName(self,
+                    'Choose path and set filename',
+                    self.doc.getInPath())
+        # Then set that as the path
+        self.doc.setOutPath(outfilepath)                                                      
+
+    def queueReductionsCheckStateChanged(self, integer):
         """Set whether reductions will be run or queued"""
         logging.debug('SRGui: Blog Checkbox activated: ' + str(integer))
         if integer == 0:
             self.doc.setQueue(False)
+            self.ui.reducePushButton.setText("Reduce!")
         elif integer == 2:
             self.doc.setQueue(True)
+            self.ui.reducePushButton.setText("Queue...")
         else:
             raise TypeError('Checkbox should be sending 0 or 2')
 
@@ -422,8 +547,8 @@ class SansReduceView(QWidget):
 
     def exitWidget(self):
         """Close the window"""
-        self.close(True)
-        self.destroy(True)
+        self.close()
+        self.destroy()
 
 
 app = QApplication.instance()

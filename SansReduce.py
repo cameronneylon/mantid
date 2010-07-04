@@ -385,7 +385,7 @@ class AbstractReduction:
                 self.sans = sansrun
 
         else:
-            self.background = None
+            self.sans = AbstractSans()
 
     def initBackgroundRun(self, bgdrun, bgdtrans):
         """Initialisation method for the background for the reduction
@@ -404,7 +404,7 @@ class AbstractReduction:
                 self.background = bgdrun
 
         else:
-            self.background = None
+            self.background = AbstractSans()
 
     def initDirectBeamRun(self, directbeamrun):
         """Initialisation method for the direct beam tranmission
@@ -426,7 +426,7 @@ class AbstractReduction:
                 raise Warning("Direct beam needs to be of type 'DirectBeam'")
 
         else:
-            self.directbeam = None
+            self.directbeam = DirectBeam()
 
     def initInstrument(self):
         self.instrument = 'SANS2D'
