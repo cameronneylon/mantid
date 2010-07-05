@@ -28,7 +28,12 @@ import logging
 import sys
 import os
 import shutil
+from copy import deepcopy
 import SansReduce
+
+# Import the UI
+from sansReduceUI import Ui_sansReduceUI
+from sansQueueUI import Ui_queuedReductionsUI
 
 # Importing the Mantid Framework
 try:
@@ -38,17 +43,15 @@ except ImportError:
         pass
     def LoadSampleDetailsFromFaw(ws, filename):
         pass
+    def SaveCanSAS1D(reduced, targetpath):
+        print "Dummy reduced to CanSAS1D!"
+
+    MANTID = False
 
 try:
     import SANSReduction
 except ImportError: 
     import SANSReduction_for_testing_only as SANSReduction
-
-# Import the UI
-from sansReduceUI import Ui_Form
-
-
-
 
 #
 # Document Class for the Sans Reduction GUI
@@ -75,13 +78,11 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         self.blog = False
         self.queue = False
         self.reductionQueue = []
+        self.queueViewVisible = False
         self.outPath = ''
 
         self._inPathFileList = ''
 
-    def initForNewDocAfterQueuing(self):
-        self.setSansRun()
-        self.setBackgroundRun()
 
     ###########################################
     # Additional getters and setters required #
@@ -91,6 +92,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if type(string) != str and type(string) != QString:
             raise TypeError("Path must be a str or QString")
         self.inPath = str(string)
+        self.setPathForAllRuns(self.getInPath())
 
     def getInPath(self):
         return self.inPath
@@ -153,10 +155,19 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if type(boolean) != bool:
             raise ValueError('Value must be True or False')
             return
-        self.queue = bool
+        self.queue = boolean
 
     def getQueue(self):
         return self.queue
+
+    def setQueueViewVisible(self, boolean):
+        if type(boolean) != bool:
+            raise ValueError('Value must be True or False')
+            return
+        self.queueViewVisible = bool
+
+    def getQueueViewVisible(self):
+        return self.queueViewVisible
 
     def setOutPath(self, string):
         """Set the output path
@@ -214,23 +225,44 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     # Reduce and Queue Methods #
     ############################
 
-    def doReduceOrQueue(self):
-        if self.queue:
-            self.queueReduction
+    def getReductionQueue(self):
+        logging.debug("Doc:getReductionQueue: Queue has " + 
+                      str(len(self.reductionQueue)) + " reductions")
+        return self.reductionQueue
 
-        else:
-            self.doSingleReduction
+    def clearReductionQueue(self):
+        self.reductionQueue = []
 
     def queueReduction(self):
         reductionToQueue = deepcopy(self)
         self.reductionQueue.append(reductionToQueue)
-        self.initForNewDocAfterQueuing
+        # self.initForNewDocAfterQueuing
+
+    def getReductionQueueLength(self):
+        return len(self.reductionQueue)
+
+    def getQueueElement(self, index):
+        """Will return a list for the indexth reduction in the queue
+
+        The list is the runnumbers for the SANS, SANS transmission, 
+        background and background transmission in that order."""
+
+        if index > len(self.reductionQueue):
+            raise ValueError("Don't have that many reductions queued")
+
+        list = []
+        list.append(self.reductionQueue[index].sans.getRunnumber())
+        list.append(self.reductionQueue[index].sans.trans.getRunnumber())
+        list.append(self.reductionQueue[index].background.getRunnumber())
+        list.append(self.reductionQueue[index].background.trans.getRunnumber())
+        return list
 
 
     def doSingleReduction(self):
         """Method for doing a single reduction
         """
-
+        
+        logging.debug("Doc:doSingleReduction: starting")
         # Do the actual reduction
         reduced = self.doReduction()
         targetdirectory, filename = os.path.split(self.getOutPath())
@@ -251,7 +283,9 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
             SaveRKH(reduced, targetpath + '.LOQ')
         if self.outputCanSAS:
             SaveCanSAS1D(reduced, targetpath + '.xml')
-        mantid.clear()
+
+        if MANTID:
+            mantid.clear()
 
             
 class SansReduceView(QWidget):
@@ -268,10 +302,12 @@ class SansReduceView(QWidget):
         """
         
         QWidget.__init__(self)
+        logging.debug("New Session------------------------------")
         self.doc = doc
         # The ui from designer is setup as self.ui
-        self.ui = Ui_Form()
+        self.ui = Ui_sansReduceUI()
         self.ui.setupUi(self)
+        self.setGeometry(20, 100, 570, 420)
 
         # Init GUI elements
         self.initMenus()
@@ -291,19 +327,19 @@ class SansReduceView(QWidget):
 
         # Run, bgd, trans selection menus
         self.connect(self.ui.sansRunMenu,
-                     SIGNAL("activated()"),
+                     SIGNAL("activated(int)"),
                      self.setSansRun)
 
         self.connect(self.ui.sansTransMenu,
-                     SIGNAL("activated()"),
+                     SIGNAL("activated(int)"),
                      self.setSansTrans)
 
         self.connect(self.ui.bgdRunMenu,
-                     SIGNAL("activated()"),
+                     SIGNAL("activated(int)"),
                      self.setBgdRun)
 
         self.connect(self.ui.bgdTransMenu,
-                     SIGNAL("activated()"),
+                     SIGNAL("activated(int)"),
                      self.setBgdTrans)
 
         # Options for the run selection
@@ -320,7 +356,7 @@ class SansReduceView(QWidget):
                      self.selectMaskFileDialog)
 
         self.connect(self.ui.directBeamRunMenu,
-                     SIGNAL("activated()"),
+                     SIGNAL("activated(int)"),
                      self.setDirectBeam)
 
         # Options for the reduction output
@@ -398,28 +434,40 @@ class SansReduceView(QWidget):
                     self.doc.getInPath())
         self.setIncomingDirectory(directory)
 
-    def setIncomingDirectory(self, qstring):
+    def setIncomingDirectory(self, qstring = None):
         """Method for setting the input file directory"""
 
-        self.doc.setInPath(qstring)
-        self.doc.setPathForAllRuns(self.doc.getInPath())
-        self.ui.inPathLineEdit.setText(qstring)
+        if qstring:
+            self.doc.setInPath(qstring)
+            self.ui.inPathLineEdit.setText(qstring)
+        else:
+            if self.ui.inPathLineEdit.displayText() != self.doc.getInPath():
+                self.doc.setInPath(self.ui.inPathLineEdit.displayText())
         self.initMenus()
 
-    def setSansRun(self):
+    def setSansRun(self, int):
         """Set the run from the current menu selection"""
+
+        logging.debug("Gui:setSansRun: settto " +
+                        self.ui.sansRunMenu.currentText())
         self.doc.setSansRun(self.ui.sansRunMenu.currentText())
 
-    def setSansTrans(self):
+    def setSansTrans(self, int):
         """Set the run from the current menu selection"""
+        logging.debug("Gui:setSansTrans: settto " +
+                        self.ui.sansTransMenu.currentText())
         self.doc.setSansTrans(self.ui.sansTransMenu.currentText())
 
-    def setBgdRun(self):
+    def setBgdRun(self, int):
         """Set the run from the current menu selection"""
+        logging.debug("Gui:setBgdRun: settto " +
+                        self.ui.bgdRunMenu.currentText())
         self.doc.setBackgroundRun(self.ui.bgdRunMenu.currentText())
     
-    def setBgdTrans(self):
+    def setBgdTrans(self, int):
         """Set the run from the current menu selection"""
+        logging.debug("Gui:setBgdTrans: settto " +
+                        self.ui.bgdTransMenu.currentText())
         self.doc.setBackgroundTrans(self.ui.bgdTransMenu.currentText())
 
     def showRawCheckStateChanged(self, integer):
@@ -455,9 +503,11 @@ class SansReduceView(QWidget):
         self.doc.setMaskfile(maskfilepath)
 
 
-    def setDirectBeam(self):
+    def setDirectBeam(self, int):
         """Set the direct beam from the menu selection"""
         self.doc.setDirectBeam(self.ui.directBeamRunMenu.currentText())
+        logging.debug("View:setDirectBeam: set to: " + 
+                      self.ui.directBeamRunMenu.currentText())
 
     def outputLOQCheckStateChanged(self, integer):
         """Set whether a LOQ file will be output"""
@@ -542,14 +592,174 @@ class SansReduceView(QWidget):
             raise TypeError('Checkbox should be sending 0 or 2')
 
     def doReduceOrQueue(self):
-        """Do the reduction or add it to the queue"""
-        self.doc.doReduceOrQueue
+        """Do the reduction or add it to the queue
+
+        The menu selections are called just to be safe. The '1's are
+        required because these are usually triggered via the 
+        comboboxes activated(int) signal"""
+
+        logging.debug("View:doReduceOrQueue")
+        self.setSansRun(1); self.setSansTrans(1)
+        self.setBgdRun(1); self.setBgdTrans(1); self.setDirectBeam(1)
+
+        if not self.doc.getQueue():
+            logging.debug("View:doReduceOrQueue: Starting single reduction")
+            self.doc.doSingleReduction()
+
+        else:
+            logging.debug("View:doReduceOrQueue: Starting to queue reduction")
+            self.doc.queueReduction()
+            if self.doc.getQueueViewVisible():
+                self.queueWindow.tablemodel = QueueTableModel(self.doc)
+                self.queueWindow.ui.reductionQueueTableView.setModel(
+                                          self.queueWindow.tablemodel)
+                self.queueWindow.show()
+                return
+            else:
+                self.queueWindow = QueueWindowView(self.doc)
+                self.queueWindow.show()
+                self.doc.setQueueViewVisible(True)
 
     def exitWidget(self):
         """Close the window"""
         self.close()
         self.destroy()
 
+class QueueWindowView(QWidget):
+    """A view for showing which reductions are currently queued
+
+    First implementation is just to show them and provide a reduce
+    button. More complex version should allow removal of items 
+    from the queue.
+    """
+
+    def __init__(self, doc):
+        """Initialisation method for the View
+        """
+        
+        QWidget.__init__(self)
+        self.doc = doc
+        # The ui from designer is setup as self.ui
+        self.ui = Ui_queuedReductionsUI()
+        self.ui.setupUi(self)
+        self.setGeometry(650, 100, 600, 400)
+
+        # Add the relevant connections to populate UI elements
+        self.ui.maskFileLineEdit.setText(self.doc.getMaskfile())
+        self.ui.directBeamLineEdit.setText(
+                     self.doc.getDirectBeam().getRunnumber())
+        self.connect(self.ui.maskFilePushButtonQueue,
+                     SIGNAL("clicked()"),
+                     self.changeMaskFileForQueue)
+        self.connect(self.ui.directBeamPushButtonQueue,
+                     SIGNAL("clicked()"),
+                     self.changeDirectBeamForQueue)
+        self.connect(self.ui.cancelQueuePushButton,
+                     SIGNAL("clicked()"),
+                     self.cancelReductionQueue)
+        self.connect(self.ui.reduceQueuePushButton,
+                     SIGNAL("clicked()"),
+                     self.doQueuedReductions)
+        self.tablemodel = QueueTableModel(self.doc)
+        self.ui.reductionQueueTableView.setModel(self.tablemodel)
+
+    def changeMaskFileForQueue(self):
+        """Method for changing the maskfile for queue
+
+        This method needs to change the mask file for
+        each reduction in the queue. There is currently no
+        means of changing them independently through the 
+        GUI.
+        """
+
+        maskfilepath = QFileDialog.getOpenFileName(self, 
+                    'Select Mask File',
+                    self.doc.getInPath())
+        self.ui.maskFileLineEdit.setText(maskfilepath)
+        for reduction in self.doc.getReductionQueue():
+            reduction.setMaskfile(maskfilepath)
+
+    def changeDirectBeamForQueue(self):
+        """Method for changing the direct beam run for queue
+
+        This method needs to change the direct beam run for
+        each reduction in the queue. There is currently no
+        means of changing them independently through the 
+        GUI.
+        """
+        directbeampath = QFileDialog.getOpenFileName(self,
+                                                         'Select Direct Beam',
+                                                         self.doc.getInPath())
+        directbeamrun = os.path.basename(str(directbeampath)).lstrip('SANS2D0')
+        self.ui.directBeamLineEdit.setText(directbeamrun)
+        for reduction in self.doc.getReductionQueue():
+            reduction.setDirectBeam(directbeamrun)
+           
+    def cancelReductionQueue(self):
+        """Method for cancelling the queue
+
+        This method will both close the queue window and
+        clear the queue, allowing the user to start again
+        with a new queue.
+        """
+            
+        self.doc.clearReductionQueue()
+        self.close()
+        self.destroy()
+
+    def doQueuedReductions(self):
+        """Calling method for doing the full set of reductions
+        """
+
+        for reduction in self.doc.getReductionQueue():
+            logging.debug("QueueView:doQueuedReductions: #" +
+                          str(self.doc.getReductionQueueLength()))
+            reduction.doSingleReduction()
+            logging.debug("\n\nQueueView: Reduction done with:\nSANS RN:" +
+                          reduction.getSansRun().getRunnumber() +
+                          "\nSANS Trans:" + 
+                          reduction.getSansTrans().getRunnumber() +
+                          "\nBackground:" +
+                          reduction.getBackgroundRun().getRunnumber() +
+                          "\nBgd Trans:" + 
+                          reduction.getBackgroundTrans().getRunnumber() +
+                          "\n\n")
+            # TODO - some monitoring and error catching here in case
+            # some reductions don't proceed properly
+
+        self.cancelReductionQueue()
+
+class QueueTableModel(QAbstractTableModel):
+    """A class to provide the model for the queue table"""
+
+    def __init__(self, doc, parent = None):
+        QAbstractTableModel.__init__(self, parent)
+        self.doc = doc
+        self.headerdata = ['SANS Run #', 'SANS Transmission',
+                           'Bgd Run #', 'Bgd Transmission', '']
+
+    def rowCount(self, parent):
+        return self.doc.getReductionQueueLength()
+
+    def columnCount(self, parent):
+        return 5
+
+    def data(self, index, role):
+        if not index.isValid():
+            return QVariant()
+        elif role != Qt.DisplayRole:
+            return QVariant()
+        elif index.column() == 4:
+            return QVariant()
+        else:
+            return QVariant(self.doc.getQueueElement(index.row())[index.column()])
+
+    def headerData(self, col, orientation, role):
+
+        if orientation == Qt.Horizontal and role == Qt.DisplayRole:
+            return QVariant(self.headerdata[col])
+        return QVariant()
+    
 
 app = QApplication.instance()
 if app == None:

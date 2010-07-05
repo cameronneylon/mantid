@@ -1,25 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Form</class>
- <widget class="QWidget" name="Form">
+ <class>sansReduceUI</class>
+ <widget class="QWidget" name="sansReduceUI">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>527</width>
-    <height>419</height>
+    <width>550</width>
+    <height>400</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Form</string>
+   <string>SANS 1D Reduction</string>
   </property>
   <widget class="QFrame" name="frame">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>60</y>
      <width>511</width>
-     <height>201</height>
+     <height>191</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -142,10 +142,10 @@
   <widget class="QWidget" name="horizontalLayoutWidget">
    <property name="geometry">
     <rect>
-     <x>10</x>
+     <x>20</x>
      <y>10</y>
      <width>431</width>
-     <height>41</height>
+     <height>51</height>
     </rect>
    </property>
    <layout class="QHBoxLayout" name="horizontalLayout">
@@ -165,7 +165,7 @@
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>370</y>
+     <y>360</y>
      <width>141</width>
      <height>32</height>
     </rect>
@@ -178,7 +178,7 @@
    <property name="geometry">
     <rect>
      <x>370</x>
-     <y>350</y>
+     <y>340</y>
      <width>141</width>
      <height>21</height>
     </rect>
@@ -187,13 +187,26 @@
     <string>Queue reductions</string>
    </property>
   </widget>
+  <widget class="QPushButton" name="cancelPushButton">
+   <property name="geometry">
+    <rect>
+     <x>240</x>
+     <y>360</y>
+     <width>115</width>
+     <height>32</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>Cancel</string>
+   </property>
+  </widget>
   <widget class="QWidget" name="gridLayoutWidget_3">
    <property name="geometry">
     <rect>
-     <x>10</x>
-     <y>270</y>
+     <x>20</x>
+     <y>260</y>
      <width>511</width>
-     <height>61</height>
+     <height>71</height>
     </rect>
    </property>
    <layout class="QGridLayout" name="gridLayout_3">
@@ -221,6 +234,16 @@
       </property>
      </widget>
     </item>
+    <item row="0" column="2">
+     <widget class="QCheckBox" name="useRunnumberCheckbox">
+      <property name="text">
+       <string> Output name is run #</string>
+      </property>
+      <property name="checked">
+       <bool>true</bool>
+      </property>
+     </widget>
+    </item>
     <item row="1" column="2">
      <widget class="QPushButton" name="outPathPushButton">
       <property name="sizePolicy">
@@ -234,30 +257,7 @@
       </property>
      </widget>
     </item>
-    <item row="0" column="2">
-     <widget class="QCheckBox" name="useRunnumberCheckbox">
-      <property name="text">
-       <string> Output name is run #</string>
-      </property>
-      <property name="checked">
-       <bool>true</bool>
-      </property>
-     </widget>
-    </item>
    </layout>
-  </widget>
-  <widget class="QPushButton" name="cancelPushButton">
-   <property name="geometry">
-    <rect>
-     <x>240</x>
-     <y>370</y>
-     <width>115</width>
-     <height>32</height>
-    </rect>
-   </property>
-   <property name="text">
-    <string>Cancel</string>
-   </property>
   </widget>
  </widget>
  <resources/>

@@ -20,7 +20,7 @@ import logging
 import sys
 import os
 import shutil
-import PyQt4.QtCore
+from PyQt4.QtCore import *
 
 try:
     import SANSReduction
@@ -77,7 +77,8 @@ class AbstractScatteringRun(object):
         self.initWorkspace()
     
         if input:
-            if isdigit(input.rstrip('.nxs').rstrip('.raw').rstrip('-add')):
+            input = str(input)
+            if input.rstrip('.nxs').rstrip('.raw').rstrip('-add').isdigit():
                 self.mungeNames(input)
 
 
@@ -111,22 +112,27 @@ class AbstractScatteringRun(object):
         thoroughly tested than it had been thus far.
         """
 
+        logging.debug("SansReduce:setRunnumber: setto: " +
+                        str(runno))
         try:
-            assert type(runno) == str or type(runno) == PyQt4.QtCore.QString
+            assert type(runno) == str or type(runno) == QString
 
         except AssertionError:
             raise TypeError('Run number must be a string')
 
-        self.runnumber = runno.rstrip('.nxs').rstrip('.raw')
+        self.runnumber = str(runno).rstrip('.nxs').rstrip('.raw')
         if '.' in runno and len(runno.split('.')) >1:
             self.setExt(runno.split('.')[1])
 
+        self.runnumberToFilename()
+
     def getRunnumber(self):
+        logging.debug("SansReduce:getRunnumber: returning: " + self.runnumber)
         return self.runnumber
 
     def setExt(self, string):
         try:
-            assert type(string) == str or type(string) == PyQt4.QtCore.QString
+            assert type(string) == str or type(string) == QString
             assert string == 'nxs' or string == 'raw'
 
         except AssertionError:
@@ -139,7 +145,7 @@ class AbstractScatteringRun(object):
 
     def setFilename(self, string):
         try:
-            assert type(string) == str or type(string) == PyQt4.QtCore.QString
+            assert type(string) == str or type(string) == QString
         except AssertionError:
             raise TypeError('Filename must be a string or Qstring')
 
@@ -149,18 +155,26 @@ class AbstractScatteringRun(object):
             self.setExt(holder[-1])
         self.filename = str(string).rstrip('.nxs').rstrip('.raw')
 
+        self.filenameToRunnumber()
+
     def getFilename(self):
+        logging.debug("SansReduceDoc:getFilename: returning: " +
+                        self.filename)
         return self.filename
 
     def setPath(self, string):
         try:
-            assert type(string) == str or type(string) == PyQt4.QtCore.QString
+            assert type(string) == str or type(string) == QString
         except AssertionError:
             raise TypeError('Path must be a string or Qstring')
 
         self.path = str(string)
+        logging.debug("SansReduceDoc:setPath: setto: " + self.path)
+        logging.debug("SansReduceDoc:setPath: getPath() returns " +
+                      self.getPath())
 
     def getPath(self):
+        logging.debug("SansReduceDoc:getPath: returning: " + self.path)
         return self.path
 
     def setWorkspace(self, string):
@@ -173,7 +187,7 @@ class AbstractScatteringRun(object):
         """
 
         try:
-            assert type(string) == str or type(string) == PyQt4.QtCore.QString
+            assert type(string) == str or type(string) == QString
         except AssertionError:
             raise TypeError('Workspace name must be a string or Qstring')
 
@@ -202,7 +216,7 @@ class AbstractScatteringRun(object):
         """
 
         if input:
-            self.mungenames(input)
+            self.mungeNames(input)
 
         fullfilename = os.path.join(self.getPath(), 
                                      self.getFilename() + self.getExt())
@@ -227,48 +241,57 @@ class AbstractScatteringRun(object):
         some cases.
         """
 
-        filename_prefix = 'SANS2D'
-
         # If there is an input then try to deal with it
         if input:
             # If input is a full filename
             if input.startswith('SANS2D'):
-                self.setFilename(input)
+                self.filename = str(input)
 
             # If input is a run number with or without extension
             elif input.rstrip('.nxs').rstrip('.raw').rstrip('-add').isdigit():
                 # setRunnumber will strip the filetype extension
-                self.setRunnumber(input)
+                self.runnumber = input.rstrip('.nxs').rstrip('.raw')
             else: pass
 
             # If input has a filetype extension then setExt
             if len(input.split('.')) > 1:
                 # Using [-1] index means the routine is safe against people
                 # including periods in the filename
-                if input.split('.')[-1] == 'nxs' or input.split('.')[-1] == 'raw':
+                if input.split('.')[-1] == 'nxs' or input.split(
+                    '.')[-1] == 'raw':
                     self.setExt(input.split('.')[-1])
             
 
-        # If have a filename but not a run number then set the run number
-        # The filename is not guaranteed to have the filetype extension
-        # removed
-        if self.getFilename() and not self.getRunnumber():
-            self.setRunnumber(self.getFilename().
-                              lstrip('SANS2D0').rstrip('.nxs').rstrip('.raw'))                
+    def filenameToRunnumber(self):
+        """Convert filename to runnumber and populate
 
+        If have a filename but not a run number then set the run number
+        The filename is not guaranteed to have the filetype extension
+        removed.
+        """
+        self.runnumber = self.getFilename().lstrip('SANS2D0'
+                                     ).rstrip('.nxs').rstrip('.raw')
 
-        # If have a run number but not a filename then set the filename
-        # self.runnumber is guaranteed not to have a filetype extension
-        if self.getRunnumber() and not self.getFilename():
-            self.setFilename(filename_prefix + 
-                            '0'*(8-len(self.getRunnumber())) +
-                             self.getRunnumber())        
+    def runnumberToFilename(self):
+        """Convert runnumber to filename and populate
+        
+        If have a run number but not a filename then set the filename
+        self.runnumber is guaranteed not to have a filetype extension
+        """
+        filename_prefix = 'SANS2D'
+        self.filename = filename_prefix + '0'*(8-len(self.getRunnumber())
+                                          ) + self.getRunnumber()
+
 
     def _buildFullPath(self):
         """Convenience method for constructing full path
         """
 
-        
+        logging.debug("SansReduceDoc:_buildFullPath: returning:" +
+                      os.path.join(self.getPath(),
+                                   self.getFilename() + '.' + self.getExt()))
+        logging.debug("\nself.getPath(): " + self.getPath() + 
+                      '\nself.getFilename(): ' + self.getFilename())
         return os.path.join(self.getPath(),
                             self.getFilename() + '.' + self.getExt())
 
@@ -432,7 +455,13 @@ class AbstractReduction:
         self.instrument = 'SANS2D'
 
     def initMaskfile(self):
-        self.maskfile = object()
+        self.maskfile = ''
+        self.__maskfile_directory = ''
+        self.__maskfile_filename = ''
+        self.__maskfile_abspath = ''
+        self.__maskfile_isabs = ''
+        self.__maskfile_currentdirwhenset = ''
+
 
     def initWavRangeLow(self):
         self.wavrangelow = 2.0
@@ -452,29 +481,20 @@ class AbstractReduction:
     #####################
     #Getters and Setters#
     #####################
-    def setSansRun(self, input = None, transrun = None):
-        """Method for setting and initialising the SANS run
-        
-        Recommended procedure is to call this with a run number or filename with an
-        extension and similarly with an associated transmission as this will make 
-        sure everything is set up correctly. However any of the internal variables 
-        can be set using the appropriate methods for the Sans class.
+    def setSansRun(self, runnumber):
+        """Method for setting the SANS run number
         """
 
+        logging.debug("SansReduce:setSansRun: setting to: " +
+                      str(runnumber))
         # If there is an input make sure it is a string or QString
-        if input:
+        if runnumber:
             try:
-                assert type(input) == str or type(runno) == QString
+                assert type(runnumber) == str or type(runnumber) == QString
             except AssertionError:
                 raise TypeError('Run identifier must be a string or QString')
-        # If there is a transrun make sure it is a string or QString
-        if input:
-            try:
-                assert type(transrun) == str or type(runno) == QString
-            except AssertionError:
-                raise TypeError('Trans run identifier must be a string or QString')       
 
-        self.sans = AbstractSans(input, transrun)
+        self.sans.setRunnumber(str(runnumber))
 
     def getSansRun(self):
         return self.sans
@@ -487,29 +507,18 @@ class AbstractReduction:
     def getSansTrans(self):
         return self.sans.trans
         
-    def setBackgroundRun(self, input = None, transrun = None):
-        """Method for setting and initialising the background run
-        
-        Recommended procedure is to call this with a run number or filename with an
-        extension and similarly with an associated transmission as this will make 
-        sure everything is set up correctly. However any of the internal variables 
-        can be set using the appropriate methods for the Sans class.
+    def setBackgroundRun(self, runnumber):
+        """Method for setting the background run
         """
 
         # If there is an input make sure it is a string or QString
-        if input:
+        if runnumber:
             try:
-                assert type(input) == str or type(runno) == QString
+                assert type(runnumber) == str or type(runnumber) == QString
             except AssertionError:
                 raise TypeError('Run identifier must be a string or QString')
-        # If there is a transrun make sure it is a string or QString
-        if input:
-            try:
-                assert type(transrun) == str or type(runno) == QString
-            except AssertionError:
-                raise TypeError('Trans run identifier must be a string or QString')       
 
-        self.background = AbstractSans(input, transrun)
+        self.background.setRunnumber(runnumber)
 
     def getBackgroundRun(self):
         return self.background
@@ -521,23 +530,18 @@ class AbstractReduction:
     def getBackgroundTrans(self):
         return self.background.trans
 
-    def setDirectBeam(self, input = None):
+    def setDirectBeam(self, runnumber):
         """Method for setting and initialising the SANS run
-        
-        Recommended procedure is to call this with a run number or filename with an
-        extension and similarly with an associated transmission as this will make 
-        sure everything is set up correctly. However any of the internal variables 
-        can be set using the appropriate methods for the DirectBeam class.
         """
 
         # If there is an input make sure it is a string or QString
-        if input:
+        if runnumber:
             try:
-                assert type(input) == str or type(runno) == QString
+                assert type(runnumber) == str or type(runnumber) == QString
             except AssertionError:
                 raise TypeError('Run identifier must be a string or QString')
 
-        self.directbeam = DirectBeam(input)
+        self.directbeam.setRunnumber(runnumber)
 
     def getDirectBeam(self):
         return self.directbeam
@@ -547,16 +551,19 @@ class AbstractReduction:
         """
         
         path = str(path) # In case it is a QString or other object
+        logging.debug("Doc:setPathForAllRuns: setto: " + path)
         try:
             assert os.path.isdir(path)
         except AssertionError:
             raise ValueError('This does not appear to be a valid path')
 
-        self.sans.setPath(path)
-        self.background.setPath(path)
-        self.sans.trans.setPath(path)
-        self.background.trans.setPath(path)
-        self.directbeam.setPath(path)
+        self.getSansRun().setPath(path)
+        self.getBackgroundRun().setPath(path)
+        self.getSansTrans().setPath(path)
+        self.getBackgroundTrans().setPath(path)
+        self.getDirectBeam().setPath(path)
+        logging.debug("Doc:setPathForAllRuns: setto: " + path)
+        logging.debug(self.getSansRun().getPath())
 
     def setInstrument(self, instrument):
         """Function for setting the instrument
@@ -612,10 +619,11 @@ class AbstractReduction:
     def setMaskfile(self, path):
         """Method for setting the Mask File
         
-        The method currently takes a path and will attempt to determine whether the file
-        exists and whether the path is relative or absolute. Aspects of the path are then
-        placed in a number of private variables. The lower level functions UserPath(path)
-        and MaskFile(filename) are then called.
+        The method currently takes a path and will attempt to determine 
+        whether the file exists and whether the path is relative or absolute. 
+        Aspects of the path are then placed in a number of private variables. 
+        The lower level functions UserPath(path) and MaskFile(filename) are 
+        then called.
         """
 
         path = str(path)
@@ -646,7 +654,7 @@ class AbstractReduction:
             if os.path.isfile(self.maskfile):
                 return self.maskfile
 
-            elif os.path.isfile(self.__maskfile__abspath):
+            elif os.path.isfile(self.__maskfile_abspath):
                 self.setMaskfile(os.path.relpath(self.__maskfile_abspath))
                 return self.maskfile
 
@@ -676,7 +684,7 @@ class AbstractReduction:
         """
         
         # Convert to float if incoming is a string or QString
-        if (type(wavelength)) == str or (type(wavelength) == PyQt4.QtCore.QString):
+        if (type(wavelength)) == str or (type(wavelength) == QString):
             wavelength = float(str(wavelength))
         try:
             assert type(wavelength) == float or type(wavelength) == int
@@ -696,7 +704,7 @@ class AbstractReduction:
         """
 
         # Convert to float if incoming is a string or QString
-        if (type(wavelength) == str) or (type(wavelength) == PyQt4.QtCore.QString):
+        if (type(wavelength) == str) or (type(wavelength) == QString):
             wavelength = float(str(wavelength))  
         try:
             assert type(wavelength) == float or type(wavelength) == int
@@ -797,25 +805,44 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
         """
 
         # Check required information is available
-        if not self.getSansRun():
+        if not self.getSansRun().getRunnumber():
             raise Warning('No SANS run set')
             return False
 
-        if not self.getSansRun().trans.getRunnumber():
+        if not self.getSansTrans().getRunnumber():
             raise Warning('No SANS transmission run number set')
             return False
 
-        if not self.getBackgroundRun():
+        if not self.getBackgroundRun().getRunnumber():
             raise Warning('No background run number set')
             return False
 
-        if not self.getBackgroundRun().trans.getRunnumber():
+        if not self.getBackgroundTrans().getRunnumber():
             raise Warning('No background transmission run number set')
             return False
 
-        if not self.getDirectBeam():
+        if not self.getDirectBeam().getRunnumber():
             raise Warning('No direct beam run number set')
             return False
+
+        if not self.getSansRun().getFilename():
+            self.getSansRun().mungeNames()
+
+        if not self.getSansTrans().getFilename():
+            self.getSansTrans().mungeNames()
+
+
+        if not self.getBackgroundRun().getFilename():
+            self.getBackgroundRun().mungeNames()
+
+
+        if not self.getBackgroundTrans().getFilename():
+            self.getBackgroundTrans().mungeNames()
+
+
+        if not self.getDirectBeam().getFilename():
+            self.getDirectBeam().mungeNames()
+
 
         if not self.getInstrument():
             raise Warning('No instrument has been set')
@@ -833,16 +860,26 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
             raise Warning('Highest wavelength to reduce not set')
             return False
     
-    
+        logging.debug("\n\nSansReduce: Reduction done with:\nSANS RN:" +
+                          self.getSansRun().getRunnumber() +
+                          "\nSANS Trans:" + 
+                          self.getSansTrans().getRunnumber() +
+                          "\nBackground:" +
+                          self.getBackgroundRun().getRunnumber() +
+                          "\nBgd Trans:" + 
+                          self.getBackgroundTrans().getRunnumber()+
+                          "\n\n")
+     
         # Check the files actually exist
         try:
             assert self.getSansRun()._testFullPath(), \
-                                      'SANS file not where expected'
-            assert self.getSansRun().trans._testFullPath(),\
+                                      'SANS file not where expected: ' + \
+                                      self.getSansRun()._buildFullPath()
+            assert self.getSansTrans()._testFullPath(),\
                                       'Sample trans file not where expected'
             assert self.getBackgroundRun()._testFullPath(), \
                                       'Background file not where expected'
-            assert self.getBackgroundRun().trans._testFullPath(), \
+            assert self.getBackgroundTrans()._testFullPath(), \
                                       'Background trans file not where expected'
             assert self.getDirectBeam()._testFullPath(),\
                                       'Direct Beam file not where expected'

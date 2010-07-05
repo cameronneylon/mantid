@@ -2,19 +2,19 @@
 
 # Form implementation generated from reading ui file 'sans-reduce-gui.ui'
 #
-# Created: Sun Jul  4 10:53:56 2010
+# Created: Mon Jul  5 10:06:11 2010
 #      by: PyQt4 UI code generator 4.7.3
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt4 import QtCore, QtGui
 
-class Ui_Form(object):
-    def setupUi(self, Form):
-        Form.setObjectName("Form")
-        Form.resize(527, 419)
-        self.frame = QtGui.QFrame(Form)
-        self.frame.setGeometry(QtCore.QRect(10, 60, 511, 201))
+class Ui_sansReduceUI(object):
+    def setupUi(self, sansReduceUI):
+        sansReduceUI.setObjectName("sansReduceUI")
+        sansReduceUI.resize(550, 400)
+        self.frame = QtGui.QFrame(sansReduceUI)
+        self.frame.setGeometry(QtCore.QRect(20, 60, 511, 191))
         self.frame.setFrameShape(QtGui.QFrame.StyledPanel)
         self.frame.setFrameShadow(QtGui.QFrame.Sunken)
         self.frame.setObjectName("frame")
@@ -68,8 +68,8 @@ class Ui_Form(object):
         self.directBeamRunMenu.setObjectName("directBeamRunMenu")
         self.directBeamRunMenu.addItem("")
         self.gridLayout_2.addWidget(self.directBeamRunMenu, 1, 1, 1, 1)
-        self.horizontalLayoutWidget = QtGui.QWidget(Form)
-        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(10, 10, 431, 41))
+        self.horizontalLayoutWidget = QtGui.QWidget(sansReduceUI)
+        self.horizontalLayoutWidget.setGeometry(QtCore.QRect(20, 10, 431, 51))
         self.horizontalLayoutWidget.setObjectName("horizontalLayoutWidget")
         self.horizontalLayout = QtGui.QHBoxLayout(self.horizontalLayoutWidget)
         self.horizontalLayout.setObjectName("horizontalLayout")
@@ -79,14 +79,17 @@ class Ui_Form(object):
         self.inPathLineEdit = QtGui.QLineEdit(self.horizontalLayoutWidget)
         self.inPathLineEdit.setObjectName("inPathLineEdit")
         self.horizontalLayout.addWidget(self.inPathLineEdit)
-        self.reducePushButton = QtGui.QPushButton(Form)
-        self.reducePushButton.setGeometry(QtCore.QRect(370, 370, 141, 32))
+        self.reducePushButton = QtGui.QPushButton(sansReduceUI)
+        self.reducePushButton.setGeometry(QtCore.QRect(370, 360, 141, 32))
         self.reducePushButton.setObjectName("reducePushButton")
-        self.queueReductionsCheckbox = QtGui.QCheckBox(Form)
-        self.queueReductionsCheckbox.setGeometry(QtCore.QRect(370, 350, 141, 21))
+        self.queueReductionsCheckbox = QtGui.QCheckBox(sansReduceUI)
+        self.queueReductionsCheckbox.setGeometry(QtCore.QRect(370, 340, 141, 21))
         self.queueReductionsCheckbox.setObjectName("queueReductionsCheckbox")
-        self.gridLayoutWidget_3 = QtGui.QWidget(Form)
-        self.gridLayoutWidget_3.setGeometry(QtCore.QRect(10, 270, 511, 61))
+        self.cancelPushButton = QtGui.QPushButton(sansReduceUI)
+        self.cancelPushButton.setGeometry(QtCore.QRect(240, 360, 115, 32))
+        self.cancelPushButton.setObjectName("cancelPushButton")
+        self.gridLayoutWidget_3 = QtGui.QWidget(sansReduceUI)
+        self.gridLayoutWidget_3.setGeometry(QtCore.QRect(20, 260, 511, 71))
         self.gridLayoutWidget_3.setObjectName("gridLayoutWidget_3")
         self.gridLayout_3 = QtGui.QGridLayout(self.gridLayoutWidget_3)
         self.gridLayout_3.setObjectName("gridLayout_3")
@@ -100,6 +103,10 @@ class Ui_Form(object):
         self.blogReductionCheckbox = QtGui.QCheckBox(self.gridLayoutWidget_3)
         self.blogReductionCheckbox.setObjectName("blogReductionCheckbox")
         self.gridLayout_3.addWidget(self.blogReductionCheckbox, 1, 1, 1, 1)
+        self.useRunnumberCheckbox = QtGui.QCheckBox(self.gridLayoutWidget_3)
+        self.useRunnumberCheckbox.setChecked(True)
+        self.useRunnumberCheckbox.setObjectName("useRunnumberCheckbox")
+        self.gridLayout_3.addWidget(self.useRunnumberCheckbox, 0, 2, 1, 1)
         self.outPathPushButton = QtGui.QPushButton(self.gridLayoutWidget_3)
         sizePolicy = QtGui.QSizePolicy(QtGui.QSizePolicy.Fixed, QtGui.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
@@ -108,34 +115,27 @@ class Ui_Form(object):
         self.outPathPushButton.setSizePolicy(sizePolicy)
         self.outPathPushButton.setObjectName("outPathPushButton")
         self.gridLayout_3.addWidget(self.outPathPushButton, 1, 2, 1, 1)
-        self.useRunnumberCheckbox = QtGui.QCheckBox(self.gridLayoutWidget_3)
-        self.useRunnumberCheckbox.setChecked(True)
-        self.useRunnumberCheckbox.setObjectName("useRunnumberCheckbox")
-        self.gridLayout_3.addWidget(self.useRunnumberCheckbox, 0, 2, 1, 1)
-        self.cancelPushButton = QtGui.QPushButton(Form)
-        self.cancelPushButton.setGeometry(QtCore.QRect(240, 370, 115, 32))
-        self.cancelPushButton.setObjectName("cancelPushButton")
 
-        self.retranslateUi(Form)
-        QtCore.QMetaObject.connectSlotsByName(Form)
+        self.retranslateUi(sansReduceUI)
+        QtCore.QMetaObject.connectSlotsByName(sansReduceUI)
 
-    def retranslateUi(self, Form):
-        Form.setWindowTitle(QtGui.QApplication.translate("Form", "Form", None, QtGui.QApplication.UnicodeUTF8))
-        self.sansRunLabel.setText(QtGui.QApplication.translate("Form", "SANS Run", None, QtGui.QApplication.UnicodeUTF8))
-        self.transLabel.setText(QtGui.QApplication.translate("Form", "Transmission", None, QtGui.QApplication.UnicodeUTF8))
-        self.sampleLabel.setText(QtGui.QApplication.translate("Form", "Sample Run", None, QtGui.QApplication.UnicodeUTF8))
-        self.bgdLabel.setText(QtGui.QApplication.translate("Form", "Background", None, QtGui.QApplication.UnicodeUTF8))
-        self.showRawCheckbox.setText(QtGui.QApplication.translate("Form", "Show RAW", None, QtGui.QApplication.UnicodeUTF8))
-        self.showNexusCheckbox.setText(QtGui.QApplication.translate("Form", "Show Nexus", None, QtGui.QApplication.UnicodeUTF8))
-        self.maskFilePushButton.setText(QtGui.QApplication.translate("Form", "Mask file...", None, QtGui.QApplication.UnicodeUTF8))
-        self.directBeamRunMenu.setItemText(0, QtGui.QApplication.translate("Form", "Direct Beam Run", None, QtGui.QApplication.UnicodeUTF8))
-        self.inPathPushButton.setText(QtGui.QApplication.translate("Form", "File Directory", None, QtGui.QApplication.UnicodeUTF8))
-        self.reducePushButton.setText(QtGui.QApplication.translate("Form", "Reduce", None, QtGui.QApplication.UnicodeUTF8))
-        self.queueReductionsCheckbox.setText(QtGui.QApplication.translate("Form", "Queue reductions", None, QtGui.QApplication.UnicodeUTF8))
-        self.outputLOQCheckbox.setText(QtGui.QApplication.translate("Form", "Output LOQ format", None, QtGui.QApplication.UnicodeUTF8))
-        self.outputCanSASCheckbox.setText(QtGui.QApplication.translate("Form", "Output CanSAS 1D", None, QtGui.QApplication.UnicodeUTF8))
-        self.blogReductionCheckbox.setText(QtGui.QApplication.translate("Form", "Blog reduction...", None, QtGui.QApplication.UnicodeUTF8))
-        self.outPathPushButton.setText(QtGui.QApplication.translate("Form", "Output directory...", None, QtGui.QApplication.UnicodeUTF8))
-        self.useRunnumberCheckbox.setText(QtGui.QApplication.translate("Form", " Output name is run #", None, QtGui.QApplication.UnicodeUTF8))
-        self.cancelPushButton.setText(QtGui.QApplication.translate("Form", "Cancel", None, QtGui.QApplication.UnicodeUTF8))
+    def retranslateUi(self, sansReduceUI):
+        sansReduceUI.setWindowTitle(QtGui.QApplication.translate("sansReduceUI", "SANS 1D Reduction", None, QtGui.QApplication.UnicodeUTF8))
+        self.sansRunLabel.setText(QtGui.QApplication.translate("sansReduceUI", "SANS Run", None, QtGui.QApplication.UnicodeUTF8))
+        self.transLabel.setText(QtGui.QApplication.translate("sansReduceUI", "Transmission", None, QtGui.QApplication.UnicodeUTF8))
+        self.sampleLabel.setText(QtGui.QApplication.translate("sansReduceUI", "Sample Run", None, QtGui.QApplication.UnicodeUTF8))
+        self.bgdLabel.setText(QtGui.QApplication.translate("sansReduceUI", "Background", None, QtGui.QApplication.UnicodeUTF8))
+        self.showRawCheckbox.setText(QtGui.QApplication.translate("sansReduceUI", "Show RAW", None, QtGui.QApplication.UnicodeUTF8))
+        self.showNexusCheckbox.setText(QtGui.QApplication.translate("sansReduceUI", "Show Nexus", None, QtGui.QApplication.UnicodeUTF8))
+        self.maskFilePushButton.setText(QtGui.QApplication.translate("sansReduceUI", "Mask file...", None, QtGui.QApplication.UnicodeUTF8))
+        self.directBeamRunMenu.setItemText(0, QtGui.QApplication.translate("sansReduceUI", "Direct Beam Run", None, QtGui.QApplication.UnicodeUTF8))
+        self.inPathPushButton.setText(QtGui.QApplication.translate("sansReduceUI", "File Directory", None, QtGui.QApplication.UnicodeUTF8))
+        self.reducePushButton.setText(QtGui.QApplication.translate("sansReduceUI", "Reduce", None, QtGui.QApplication.UnicodeUTF8))
+        self.queueReductionsCheckbox.setText(QtGui.QApplication.translate("sansReduceUI", "Queue reductions", None, QtGui.QApplication.UnicodeUTF8))
+        self.cancelPushButton.setText(QtGui.QApplication.translate("sansReduceUI", "Cancel", None, QtGui.QApplication.UnicodeUTF8))
+        self.outputLOQCheckbox.setText(QtGui.QApplication.translate("sansReduceUI", "Output LOQ format", None, QtGui.QApplication.UnicodeUTF8))
+        self.outputCanSASCheckbox.setText(QtGui.QApplication.translate("sansReduceUI", "Output CanSAS 1D", None, QtGui.QApplication.UnicodeUTF8))
+        self.blogReductionCheckbox.setText(QtGui.QApplication.translate("sansReduceUI", "Blog reduction...", None, QtGui.QApplication.UnicodeUTF8))
+        self.useRunnumberCheckbox.setText(QtGui.QApplication.translate("sansReduceUI", " Output name is run #", None, QtGui.QApplication.UnicodeUTF8))
+        self.outPathPushButton.setText(QtGui.QApplication.translate("sansReduceUI", "Output directory...", None, QtGui.QApplication.UnicodeUTF8))
 
