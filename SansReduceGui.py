@@ -38,6 +38,7 @@ from sansQueueUI import Ui_queuedReductionsUI
 # Importing the Mantid Framework
 try:
     from mantidsimple import *
+    MANTID = True
 except ImportError:
     def LoadRaw(filename, outws):
         pass
@@ -74,7 +75,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
         self.outputLOQ = False
         self.outputCanSAS = True
-        self.useRunnumberForOutput = False
+        self.useRunnumberForOutput = True
         self.blog = False
         self.queue = False
         self.reductionQueue = []
@@ -89,6 +90,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     ###########################################
 
     def setInPath(self, string):
+        print str(string)
         if type(string) != str and type(string) != QString:
             raise TypeError("Path must be a str or QString")
         self.inPath = str(string)
