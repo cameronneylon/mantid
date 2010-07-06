@@ -104,9 +104,11 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
             raise ValueError('Value must be True or False')
             return
         self.showRawInMenus = boolean
+        logging.debug("Doc:setShowRawInMenus: setto: " + 
+                      str(self.showRawInMenus))
 
     def getShowRawInMenus(self):
-        return self.getShowRawInMenus
+        return self.showRawInMenus
 
     def setShowNexusInMenus(self, boolean):
         if type(boolean) != bool:
@@ -202,6 +204,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     def includeRun(self, string):
         if string.endswith('.raw') and self.getShowRawInMenus():
+            logging.debug("ends with raw and " + str(self.getShowRawInMenus()))
             return True
         elif string.endswith('.nxs') and self.getShowNexusInMenus():
             return True
