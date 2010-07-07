@@ -30,6 +30,7 @@ import os
 import shutil
 from copy import deepcopy
 import SansReduce
+import lablogpost
 
 # Import the UI
 from sansReduceUI import Ui_sansReduceUI
@@ -84,6 +85,11 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
         self._inPathFileList = ''
 
+        # Blog variables
+        self.blogurl = 'http://biolab.isis.rl.ac.uk'
+        self.bloguid = ''
+        self.blogusername = 'http://cameronneylon.net'
+        self.blog_sname = 'testing_sandpit'
 
     ###########################################
     # Additional getters and setters required #
@@ -263,7 +269,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         return list
 
 
-    def writeOutputFiles(self, targetdirectory, filename):
+    def writeOutputFiles(self, reduced, targetdirectory, filename):
         """Write out the LOQ and CanSAS files as required"""
 
         # Check the target directory and filename make sense
@@ -294,7 +300,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
             filename = self.getSansRun().getRunnumber().rstrip('-add')
 
         # Write out the required files
-        self.writeOutputFiles(targetdirectory, filename)
+        self.writeOutputFiles(reduced, targetdirectory, filename)
 
         # If the reduction is to be blogged out
         if self.getBlogReduction():
@@ -310,6 +316,9 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     def doQueuedReductions(self):
 
+        if self.getBlogReduction():
+            self.initialiseReductionPost()
+
         for reduction in self.doc.getReductionQueue():
             reduced = reduction.doReduction()
             targetdirectory, filename = os.path.split(reduction.getOutPath())
@@ -320,7 +329,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
         # Write out the required files
             reduction.writeOutputFiles(targetdirectory, filename)
-###############################################################################
+
         # If the reduction is to be blogged out
             if self.getBlogReduction():
                 post_id = reduction.arrangeOutputPostsToBlog(os.path.join(
@@ -328,7 +337,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
                                                       filename))
                 self.appendReductionToReductionPost(post_id)
 
-
+        if self.getBlogReduction():
             self.closeAndPostReductionPost()
 
 
@@ -365,7 +374,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if self.outputLOQ:
             datapostlist.append(self.doOutputDataUploadToBlog(
                                      targetpath + '.LOQ'))
-        if self.outputCanSAS1D:
+        if self.outputCanSAS:
             datapostlist.append(self.doOutputDataUploadToBlog(
                                      targetpath + '.xml'))
 
@@ -394,9 +403,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
             raise Warning("Failed to create the reduced data post")
             return False
             
-    def appendReductionToReductionPost(self, datapost_id):
-        """Start the post if it doesn't exist, append entry if it does"""
-
+    def initialiseReductionPost(self):
         if not self.blogreductionpost:
             self.blogreductionpost = lablogpost.LaBLogPost()
             self.blogreductionpost.set_username(self.blogusername)
@@ -409,6 +416,13 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
             self.blogreductionposttable = lablogpost.BlogTable(
                 ['SANS Run', 'SANS Trans', 
                  'Bgd Run', 'Bgd Trans', 'Reduced data'])
+
+    def appendReductionToReductionPost(self, datapost_id):
+        """Start the post if it doesn't exist, append entry if it does"""
+
+        if not self.blogreductionpost:
+            self.initialiseReductionPost()
+
         self.blogreductionposttable.appendRow(
             [self.getSansRun().getRunnumber(), 
              self.getSansTrans().getRunnumber(),
