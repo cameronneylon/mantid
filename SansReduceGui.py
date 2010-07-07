@@ -88,8 +88,9 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         # Blog variables
         self.blogurl = 'http://biolab.isis.rl.ac.uk'
         self.bloguid = ''
-        self.blogusername = 'http://cameronneylon.net'
+        self.blogusername = 'cameronneylon.net'
         self.blog_sname = 'testing_sandpit'
+        self.blogreductionpost = None
 
     ###########################################
     # Additional getters and setters required #
@@ -309,6 +310,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
                                                       filename))
             self.appendReductionToReductionPost(post_id)
             self.closeAndPostReductionPost()
+            self.blogreductionpost = None
                                   
 
         if MANTID:
@@ -319,7 +321,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if self.getBlogReduction():
             self.initialiseReductionPost()
 
-        for reduction in self.doc.getReductionQueue():
+        for reduction in self.getReductionQueue():
             reduced = reduction.doReduction()
             targetdirectory, filename = os.path.split(reduction.getOutPath())
         
@@ -328,17 +330,24 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
                 filename = reduction.getSansRun().getRunnumber().rstrip('-add')
 
         # Write out the required files
-            reduction.writeOutputFiles(targetdirectory, filename)
+            reduction.writeOutputFiles(reduced, targetdirectory, filename)
 
         # If the reduction is to be blogged out
             if self.getBlogReduction():
                 post_id = reduction.arrangeOutputPostsToBlog(os.path.join(
                                                       targetdirectory,
                                                       filename))
-                self.appendReductionToReductionPost(post_id)
+                self.blogreductionposttable.appendRow(
+                        [reduction.getSansRun().getRunnumber(), 
+                         reduction.getSansTrans().getRunnumber(),
+                         reduction.getBackgroundRun().getRunnumber(),
+                         reduction.getBackgroundTrans().getRunnumber(),
+                         '[blog]' + post_id + '[/blog]'])
+
 
         if self.getBlogReduction():
             self.closeAndPostReductionPost()
+            self.blogreductionpost = None
 
 
 
@@ -382,7 +391,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         outputblogpost = lablogpost.LaBLogPost()
         outputblogpost.set_username(self.blogusername)
         if self.getUseRunnumberForOutput():
-            outputblogpost.set_title(self.getRunnumber() + 
+            outputblogpost.set_title(self.getSansRun().getRunnumber() + 
                                      ' - reduced SANS data')
         else:
             outputblog.post.set_title(os.path.basename(targetpath) +
@@ -394,7 +403,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         outputblogpost.set_attached_data(datapostlist)
         content = "Reduced SANS Data\n\n"
         for datapost in datapostlist:
-            content.append("[data]" + datapost + "[/data]\n\n")
+            content += "[data]" + datapost + "[/data]\n\n"
         outputblogpost.set_content(content)
         outputpost_id = outputblogpost.doPost(self.blogurl, self.bloguid)
         if outputpost_id:
@@ -406,8 +415,9 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     def initialiseReductionPost(self):
         if not self.blogreductionpost:
             self.blogreductionpost = lablogpost.LaBLogPost()
+            self.blogreductionpost.set_title('SANS Data Reduction')
             self.blogreductionpost.set_username(self.blogusername)
-            self.blogreductionpost.set_section('Procedures')
+            self.blogreductionpost.set_section('Procedure')
             self.blogreductionpost.set_blog_sname(self.blog_sname)
             self.blogreductionpost.set_metadata(
                       {'Procedure' : 'Data_reduction'})
@@ -418,10 +428,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
                  'Bgd Run', 'Bgd Trans', 'Reduced data'])
 
     def appendReductionToReductionPost(self, datapost_id):
-        """Start the post if it doesn't exist, append entry if it does"""
-
-        if not self.blogreductionpost:
-            self.initialiseReductionPost()
+        """Append the new reduction entry to table"""
 
         self.blogreductionposttable.appendRow(
             [self.getSansRun().getRunnumber(), 
@@ -435,7 +442,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
         table = self.blogreductionposttable.serialize()
         self.blogreductionpost.append_content(table)
-        self.blogreudctionpost.doPost(self.blogurl, self.bloguid)
+        self.blogreductionpost.doPost(self.blogurl, self.bloguid)
         
             
 class SansReduceView(QWidget):

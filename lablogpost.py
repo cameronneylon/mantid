@@ -334,7 +334,9 @@ class LaBLogPost(LaBLogObject):
         self.content = content
 
     def append_content(self, content):
-        self.content.append(content)
+        if not self.content:
+            self.content = ''
+        self.content += content
 
     def set_blog_id(self, blog_id):
         self.blog_id = blog_id
@@ -621,7 +623,7 @@ class BlogTable(object):
         """Init method can take a set of lists and populate table"""
 
         self.content = None
-        if self.checkInput(input):
+        if input and self.checkInput(input):
             self.replaceContent(input)
         
     def checkInput(self, input):
@@ -633,15 +635,25 @@ class BlogTable(object):
             return False
 
         # Check number of lists in input and that all rows are the same length
-        check = []
-        for row in input:
-            check.append(len(row))
-            if len(check) > 2 and check[-1] != check[-2]:
-                raise ValueError("Rows are not the same length")
-                return False
+        # but only if the list contains lists
+        if type(input[0]) == list:
+            check = []
+            for row in input:
+                check.append(len(row))
+                if len(check) > 1 and check[-1] != check[-2]:
+                    raise ValueError("Rows are not the same length")
+                    return False
         return True
 
     def replaceContent(self, input):
+        """Replace the content of the table with values from input
+
+        If input is a single list (and not a list if lists) then
+        put it inside a list before setting the content to it.
+        """
+
+        if type(input[0] != list):
+            input = [input]
         self.content = input
 
     def appendRow(self, input):
@@ -661,12 +673,12 @@ class BlogTable(object):
     def serialize(self):
         table = "[table]"
         for row in self.content:
-            table.append("[row]")
+            table += "[row]"
             for column in row:
-                table.append(column + "[col]")
+                table += column + "[col]"
             table.rstrip("[col]")
-            table.append("[/row]\n")
-        table.append("[/table]\n")
+            table += "[/row]\n"
+        table += "[/table]\n"
         return table        
         
 
