@@ -1,0 +1,94 @@
+# SansReduce: A wrapping library for SANS data reduction in the Mantid
+# Neutron Scattering Analysis framework
+#
+# Copyright (C) 2010 Cameron Neylon
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+This file contains example scripts of how the SansReduce library can be
+used within Mantid. Scripts are contained within lines of hash (pound) 
+symbols and all the text included will be needed. Real run numbers and
+filenames are given but these runs or files will need to be in the 
+target directory for these to work.
+
+####################################################################
+# Simple Single Reduction of SANS2D data                           #
+####################################################################
+
+from SansReduce import *
+reduction = Standard1DReductionSANS2DRearDetector()
+reduction.setSansRun('3325')
+reduction.setSansTrans('####')
+reduction.setBackgroundRun('####')
+reduction.setBackgroundTrans('####')
+reduction.setDirectBeam('####')
+reduction.setMaskfile('/path/to/mask/file')
+reduction.setPathForAllRuns('/Examples/data/')
+
+reduced_workspace = reduction.doReduction()
+SaveCanSAS1D(reduced_workspace, 'path/filename.xml')
+SaveRKH(reduced_workspace, 'path/filename.raw')
+
+####################################################################
+# Simpler Single Reduction, by declaring run numbers at init time  #
+####################################################################
+
+from SansReduce import *
+
+# Reduction can be setup with the run numbers from the start
+reduction = Standard1DReductionSANS2DRearDetector(sansrun = '####', 
+bgdrun = '####', directbeamrun = '####', sanstrans = '####', 
+bgdtrans = '####', maskfile = 'path/to/mask/file')
+
+# This step only necessary if data not in the default folder
+reduction.setPathForAllRuns('/Examples/data') 
+
+reduced_workspace = reduction.doReduction()
+SaveCanSAS1D(reduced_workspace, 'path/filename.xml')
+SaveRKH(reduced_workspace, 'path/filename.raw')
+
+####################################################################
+# Loop to reduce for multiple wavelength ranges                    #
+####################################################################
+
+from SansReduce import *
+from mantidsimple import *
+
+# Reduction can be setup with the run numbers from the start
+reduction = Standard1DReductionSANS2DRearDetector(sansrun = '####', 
+bgdrun = '####', directbeamrun = '####', sanstrans = '####', 
+bgdtrans = '####', maskfile = 'path/to/mask/file')
+
+# This step only necessary if data not in the default folder
+reduction.setPathForAllRuns('/Examples/data') 
+
+# Setup list of wavelength ranges - this is set up as a list of pairs
+# but could be set up any way you like
+waverangelist = [[1.0, 5.0], [5.0, 10.0], [10.0, 20.0]]
+
+for waverange in waverangelist:
+    # set the wavelength range from the list
+    reduction.setWavRangeLow(waverange[0])
+    reduction.setWaveRangeHigh(waverange[1])
+
+    # do the reduction, build a filename, and save output file
+    temp_ws = reduction.doReduction()
+    filename = 'wvrngreduction_' + str(waverange[0]) + '_' + str(waverange[1])
+    SaveCanSAS1D(temp_ws, filename + '.xml')
+
+    # it would be safe at this point to clear Mantid workspaces because
+    # the run numbers are still maintained and files can be reloaded but
+    # that shouldn't be necessary
+
+    mantid.clear()
