@@ -371,12 +371,12 @@ class AbstractReduction:
     """
 
     def __init__(self, sansrun = None, bgdrun = None, directbeamrun = None,
-                 sanstrans = None, bgdtrans = None):
+                 sanstrans = None, bgdtrans = None, maskfile = None):
         self.initSansRun(sansrun, sanstrans)
         self.initBackgroundRun(bgdrun, bgdtrans)
         self.initDirectBeamRun(directbeamrun)
         self.initInstrument()
-        self.initMaskfile()
+        self.initMaskfile(maskfile)
         self.initWavRangeLow()
         self.initWavRangeHigh()
         self.initDetector()
@@ -454,7 +454,7 @@ class AbstractReduction:
     def initInstrument(self):
         self.instrument = 'SANS2D'
 
-    def initMaskfile(self):
+    def initMaskfile(self, maskfile):
         self.maskfile = ''
         self.__maskfile_directory = ''
         self.__maskfile_filename = ''
@@ -462,6 +462,8 @@ class AbstractReduction:
         self.__maskfile_isabs = ''
         self.__maskfile_currentdirwhenset = ''
 
+        if maskfile:
+            self.setMaskfile(maskfile)
 
     def initWavRangeLow(self):
         self.wavrangelow = 2.0
@@ -781,10 +783,10 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
     """
 
     def __init__(self, sansrun = None, bgdrun = None, directbeamrun = None,
-                 sanstrans = None, bgdtrans = None):
+                 sanstrans = None, bgdtrans = None, maskfile = None):
         AbstractReduction.__init__(self, sansrun, 
                                    bgdrun, directbeamrun, 
-                                   sanstrans, bgdtrans)
+                                   sanstrans, bgdtrans, maskfile)
         self.setInstrument('SANS2D')
         self.setDetector('rear-detector')
         self.setGravity(True)
