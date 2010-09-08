@@ -19,8 +19,8 @@
 This file contains example scripts of how the SansReduce library can be
 used within Mantid. Scripts are contained within lines of hash (pound) 
 symbols and all the text included will be needed. Real run numbers and
-filenames are given but these runs or files will need to be in the 
-target directory for these to work.
+filenames will need to be given and these runs will need to be in the 
+target directory, or the data directory set separately for these to work.
 
 ####################################################################
 # Simple Single Reduction of SANS2D data                           #
