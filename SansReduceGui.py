@@ -77,7 +77,6 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     def __init__(self):
         SansReduce.Standard1DReductionSANS2DRearDetector.__init__(self)
 
-        self.initCurrentReduction()
 
         self.inPath = DEFAULT_IN_PATH
         self.maskfile = ''
@@ -92,8 +91,9 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         self.reductionQueue = []
         self.queueViewVisible = False
         self.outPath = ''
-
         self._inPathFileList = ''
+
+        self.initCurrentReduction()
 
     #########################################################
     # Map getters and setters onto internal Reduction object#
@@ -102,7 +102,18 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     #########################################################
 
     def initCurrentReduction(self):
+        """Initiate the reduction object for first or subsequent times
+
+        The first time the object is initiated all internal variables will
+        be set to null. These will then be built up as GUI elements are selected.
+        After a reduction the object is re-initialised and in this case some 
+        elements such as direct beam, maskfile, and path need to persist.
+        """
+
         self.currentReduction = SansReduce.Standard1DReductionSANS2DRearDetector()
+        self.currentReduction.setDirectBeam(self.directbeam)
+        self.currentReduction.setMaskfile(self.maskfile)
+        self.currentReduction.setPathForAllRuns(self.inPath)
 
     def setSansRun(self, qstring):
         self.currentReduction.setSansRun(str(qstring))
@@ -152,7 +163,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         if type(string) != str and type(string) != QString:
             raise TypeError("Path must be a str or QString")
         self.inPath = str(string)
-        self.setPathForAllRuns(self.getInPath())
+        self.currentReduction.setPathForAllRuns(self.getInPath())
 
     def getInPath(self):
         return self.inPath
@@ -329,13 +340,16 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         return list
 
 
-    def doSingleReduction(self):
-        """Method for doing a single reduction
+    def writeOutputFiles(self, reducedWS):
+        """Method for writing required output files after reduction
+
+        This method takes a workspace and checks the document variables
+        outPath, Runnumber, outputLOQ, and outputNexus to determine what
+        needs to be written where. This means that this variables are 
+        effectively global to a queued set of reductions. This should be
+        fine in most circumstances.
         """
-        
-        logging.debug("Doc:doSingleReduction: starting")
-        # Do the actual reduction
-        reduced = self.currentReduction.doReduction()
+
         targetdirectory, filename = os.path.split(self.getOutPath())
         
         # Construct a filename from run number if required
@@ -351,13 +365,48 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         # Set up the path and write out the files, then clear workspaces
         targetpath = os.path.join(targetdirectory, filename)
         if self.outputLOQ:
-            SaveRKH(reduced, targetpath + '.LOQ')
+            SaveRKH(reducedWS, targetpath + '.LOQ')
         if self.outputCanSAS:
-            SaveCanSAS1D(reduced, targetpath + '.xml')
+            SaveCanSAS1D(reducedWS, targetpath + '.xml')
 
+    def doSingleReduction(self):
+        """Method for doing a single reduction
+        """
+        
+        logging.debug("Doc:doSingleReduction: starting")
+        # Do the actual reduction
+        reduced = self.currentReduction.doReduction()
+        # Write out the required output files
+        self.writeOutputFiles(reduced)
+
+        self.currentReduction = None
+        self.initCurrentReduction()
         if MANTID:
             mantid.clear()
 
+    def doQueuedReductions(self):
+        """Method for carrying out the reductions in the queue"""
+
+        for reduction in self.getReductionQueue():
+            logging.debug("QueueView:doQueuedReductions: #" +
+                          str(self.doc.getReductionQueueLength()))
+            reduced = reduction.doReduction()
+            self.writeOutputFiles(reduced)
+            logging.debug("\n\nQueueView: Reduction done with:\nSANS RN:" +
+                          reduction.getSansRun().getRunnumber() +
+                          "\nSANS Trans:" + 
+                          reduction.getSansTrans().getRunnumber() +
+                          "\nBackground:" +
+                          reduction.getBackgroundRun().getRunnumber() +
+                          "\nBgd Trans:" + 
+                          reduction.getBackgroundTrans().getRunnumber() +
+                          "\n\n")
+            # Clear the Mantid workspace before doing further reductions
+            if MANTID:
+                mantid.clear()
+            # TODO - some monitoring and error catching here in case
+            # some reductions don't proceed properly
+    
             
 class SansReduceView(QWidget):
     """The view for the SANS Reduce GUI
@@ -652,7 +701,7 @@ class SansReduceView(QWidget):
 
     def queueReductionsCheckStateChanged(self, integer):
         """Set whether reductions will be run or queued"""
-        logging.debug('SRGui: Blog Checkbox activated: ' + str(integer))
+        logging.debug('SRGui: Queue Checkbox activated: ' + str(integer))
         if integer == 0:
             self.doc.setQueue(False)
             self.ui.reducePushButton.setText("Reduce!")
@@ -780,24 +829,14 @@ class QueueWindowView(QWidget):
         self.destroy()
 
     def doQueuedReductions(self):
-        """Calling method for doing the full set of reductions
+        """UI Calling method for doing the full set of reductions
+
+        Calls the document method for doing the queued reductions and
+        then kills the queue and closes the queue window.
         """
 
-        for reduction in self.doc.getReductionQueue():
-            logging.debug("QueueView:doQueuedReductions: #" +
-                          str(self.doc.getReductionQueueLength()))
-            reduction.doSingleReduction()
-            logging.debug("\n\nQueueView: Reduction done with:\nSANS RN:" +
-                          reduction.getSansRun().getRunnumber() +
-                          "\nSANS Trans:" + 
-                          reduction.getSansTrans().getRunnumber() +
-                          "\nBackground:" +
-                          reduction.getBackgroundRun().getRunnumber() +
-                          "\nBgd Trans:" + 
-                          reduction.getBackgroundTrans().getRunnumber() +
-                          "\n\n")
-            # TODO - some monitoring and error catching here in case
-            # some reductions don't proceed properly
+        self.doc.doQueuedReductions()
+
 
         self.cancelReductionQueue()
 
