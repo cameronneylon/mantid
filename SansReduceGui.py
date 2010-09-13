@@ -97,6 +97,8 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     #########################################################
     # Map getters and setters onto internal Reduction object#
+    #                                                       #
+    # TODO: BUILD THE GETTERS AS WELL IF NECESSARY          #
     #########################################################
 
     def initCurrentReduction(self):
@@ -259,12 +261,17 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     ################################
 
     def includeRun(self, string):
+        """A filter method for getting list of runs for menus
+
+        This filter method is called from getRunListForMenu.
+        """
+
         if string.endswith('.raw') and self.getShowRawInMenus():
             logging.debug("ends with raw and " + str(self.getShowRawInMenus()))
             return True
         elif string.endswith('.nxs') and self.getShowNexusInMenus():
             return True
-        elif string.endswith('.nx5') and self.getShotNexusInMenus():
+        elif string.endswith('.nx5') and self.getShowNexusInMenus():
             return True
         else:
             return False
@@ -300,13 +307,16 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         # self.initForNewDocAfterQueuing
 
     def getReductionQueueLength(self):
+        """Length method for the queue. Required for queue table."""
         return len(self.reductionQueue)
 
     def getQueueElement(self, index):
         """Will return a list for the indexth reduction in the queue
 
         The list is the runnumbers for the SANS, SANS transmission, 
-        background and background transmission in that order."""
+        background and background transmission in that order. This
+        method is required for building the queue table in the UI.
+        """
 
         if index > len(self.reductionQueue):
             raise ValueError("Don't have that many reductions queued")
@@ -325,7 +335,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         
         logging.debug("Doc:doSingleReduction: starting")
         # Do the actual reduction
-        reduced = self.doReduction()
+        reduced = self.currentReduction.doReduction()
         targetdirectory, filename = os.path.split(self.getOutPath())
         
         # Construct a filename from run number if required
