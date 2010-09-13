@@ -60,6 +60,14 @@ except ImportError:
 class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     """The document for handling the SANS Reduce GUI
 
+    The document contains state variable for the GUI as well as
+    an instance of 1D SANS2D reduction class as an internal 
+    variable. Some GUI state variables need to persist outside
+    the specific Reduction object instance such as the in path
+    output path, maskfile, and direct beam. In addition there is 
+    Reduction Queue, a list of Reduction objects ready for reduction.
+
+
     The document is a subclass of the standard 1D SANS2d
     reduction class from the SansReduce library. A few 
     extra options are stored and the finalised object 
@@ -69,10 +77,13 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     def __init__(self):
         SansReduce.Standard1DReductionSANS2DRearDetector.__init__(self)
 
+        self.initCurrentReduction()
+
         self.inPath = DEFAULT_IN_PATH
+        self.maskfile = ''
+        self.directbeam = ''
         self.showRawInMenus = True
         self.showNexusInMenus = False
-
         self.outputLOQ = False
         self.outputCanSAS = True
         self.useRunnumberForOutput = True
@@ -84,10 +95,55 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
         self._inPathFileList = ''
 
+    #########################################################
+    # Map getters and setters onto internal Reduction object#
+    #########################################################
 
-    ###########################################
-    # Additional getters and setters required #
-    ###########################################
+    def initCurrentReduction(self):
+        self.currentReduction = SansReduce.Standard1DReductionSANS2DRearDetector()
+
+    def setSansRun(self, qstring):
+        self.currentReduction.setSansRun(str(qstring))
+
+    def setSansTrans(self, qstring):
+        self.currentReduction.setSansTrans(str(qstring))
+
+    def setBackgroundRun(self, qstring):
+        self.currentReduction.setBackgroundRun(str(qstring))
+
+    def setBackgroundTrans(self, qstring):
+        self.currentReduction.setBackgroundTrans(str(qstring))
+
+    def setMaskfile(self qstring):
+        """Set the maskfile in reduction object and doc
+
+        The maskfile needs to persist after a given reduction
+        is performed. Here we set both a persistent variable
+        outside the reduction object and one in the reduction
+        object itself.
+        """
+
+        maskfile = str(qstring)
+        self.maskfile = maskfile
+        self.currentReduction.setMaskfile(maskfile)
+
+    def setDirectBeam(self, qstring):
+        """Set the directbeam in reduction object and doc
+
+        The direct beam needs to persists after a given 
+        reduction is performed. Here we set both a persistent
+        variable outside th reduction object and one in the
+        reduction object itself.
+        """
+
+        directbeam = str(qstring)
+        self.directbeam = directbeam
+        self.currentReduction.setDirectBeam(directbeam)
+
+
+    ###########################################################
+    # Additional getters and setters required for doc methods #
+    ###########################################################
 
     def setInPath(self, string):
         print str(string)
@@ -605,7 +661,8 @@ class SansReduceView(QWidget):
 
         logging.debug("View:doReduceOrQueue")
         self.setSansRun(1); self.setSansTrans(1)
-        self.setBgdRun(1); self.setBgdTrans(1); self.setDirectBeam(1)
+        self.setBgdRun(1); self.setBgdTrans(1)
+        self.setDirectBeam(1)
 
         if not self.doc.getQueue():
             logging.debug("View:doReduceOrQueue: Starting single reduction")
