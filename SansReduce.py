@@ -269,18 +269,38 @@ class AbstractScatteringRun(object):
         The filename is not guaranteed to have the filetype extension
         removed.
         """
-        self.runnumber = self.getFilename().lstrip('SANS2D0'
+
+        if self.runnumber:
+            return
+        else:
+            self.runnumber = self.getFilename().lstrip('SANS2D0'
                                      ).rstrip('.nxs').rstrip('.raw')
 
     def runnumberToFilename(self):
         """Convert runnumber to filename and populate
         
         If have a run number but not a filename then set the filename
-        self.runnumber is guaranteed not to have a filetype extension
+        self.runnumber is guaranteed not to have a filetype extension.
+        This can cause problems if using filenames that actually are
+        the runnumber rather than runnumber plus other information 
+        (e.g. 3339.nxs rather than SANS2D00003339.nxs). Therefore the 
+        currently set directory is checked for simpler versions of the 
+        filename just in case. Routine tests for existence of the file
+        in both cases and returns True if it exists and False if not.
+        This is only a best efforts case and depends on the path being
+        set correctly.
         """
-        filename_prefix = 'SANS2D'
-        self.filename = filename_prefix + '0'*(8-len(self.getRunnumber())
+
+        # Test whether a file exists with the filename set as runnumber
+        self.filename = self.getRunnumber()
+        if self._testFullPath():
+            return True
+        # If it doesn't convert runnumber to a standard SANS2D name
+        else:
+            filename_prefix = 'SANS2D'
+            self.filename = filename_prefix + '0'*(8-len(self.getRunnumber())
                                           ) + self.getRunnumber()
+            return self._testFullPath()
 
 
     def _buildFullPath(self):
