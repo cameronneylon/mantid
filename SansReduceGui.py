@@ -30,6 +30,7 @@ import os
 import shutil
 from copy import deepcopy
 import SansReduce
+import lablogpost
 
 # Import the UI
 from sansReduceUI import Ui_sansReduceUI
@@ -94,6 +95,13 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         self._inPathFileList = ''
 
         self.initCurrentReduction()
+
+        # Blog variables
+        self.blogurl = 'http://biolab.isis.rl.ac.uk'
+        self.bloguid = ''
+        self.blogusername = 'cameronneylon.net'
+        self.blog_sname = 'testing_sandpit'
+        self.blogreductionpost = None
 
     #########################################################
     # Map getters and setters onto internal Reduction object#
@@ -339,8 +347,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         list.append(self.reductionQueue[index].background.trans.getRunnumber())
         return list
 
-
-    def writeOutputFiles(self, reducedWS):
+    def writeOutputFiles(self, reduced, targetdirectory, filename):
         """Method for writing required output files after reduction
 
         This method takes a workspace and checks the document variables
@@ -349,35 +356,44 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         effectively global to a queued set of reductions. This should be
         fine in most circumstances.
         """
-
-        targetdirectory, filename = os.path.split(self.getOutPath())
-        
-        # Construct a filename from run number if required
-        if self.useRunnumberForOutput:
-            filename = self.getSansRun().getRunnumber().rstrip('-add')
-
         # Check the target directory and filename make sense
         if not os.path.isdir(targetdirectory):
             raise IOError("Target directory does not exist")
         if not filename:
             raise IOError("I don't have a filename to save to")
 
-        # Set up the path and write out the files, then clear workspaces
+        # Set up the path and write out the files
         targetpath = os.path.join(targetdirectory, filename)
         if self.outputLOQ:
-            SaveRKH(reducedWS, targetpath + '.LOQ')
+            SaveRKH(reduced, targetpath + '.LOQ')
         if self.outputCanSAS:
-            SaveCanSAS1D(reducedWS, targetpath + '.xml')
+            SaveCanSAS1D(reduced, targetpath + '.xml')
+        
 
     def doSingleReduction(self):
         """Method for doing a single reduction
         """
-        
+
         logging.debug("Doc:doSingleReduction: starting")
         # Do the actual reduction
         reduced = self.currentReduction.doReduction()
-        # Write out the required output files
-        self.writeOutputFiles(reduced)
+        targetdirectory, filename = os.path.split(self.getOutPath())
+        
+        # Construct a filename from run number if required
+        if self.useRunnumberForOutput:
+            filename = self.getSansRun().getRunnumber().rstrip('-add')
+
+        # Write out the required files
+        self.writeOutputFiles(reduced, targetdirectory, filename)
+
+        # If the reduction is to be blogged out
+        if self.getBlogReduction():
+            post_id =self.arrangeOutputPostsToBlog(os.path.join(
+                                                      targetdirectory,
+                                                      filename))
+            self.appendReductionToReductionPost(post_id)
+            self.closeAndPostReductionPost()
+            self.blogreductionpost = None
 
         self.currentReduction = None
         self.initCurrentReduction()
@@ -387,26 +403,136 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     def doQueuedReductions(self):
         """Method for carrying out the reductions in the queue"""
 
+        if self.getBlogReduction():
+            self.initialiseReductionPost()
+
         for reduction in self.getReductionQueue():
-            logging.debug("QueueView:doQueuedReductions: #" +
-                          str(self.doc.getReductionQueueLength()))
             reduced = reduction.doReduction()
-            self.writeOutputFiles(reduced)
-            logging.debug("\n\nQueueView: Reduction done with:\nSANS RN:" +
-                          reduction.getSansRun().getRunnumber() +
-                          "\nSANS Trans:" + 
-                          reduction.getSansTrans().getRunnumber() +
-                          "\nBackground:" +
-                          reduction.getBackgroundRun().getRunnumber() +
-                          "\nBgd Trans:" + 
-                          reduction.getBackgroundTrans().getRunnumber() +
-                          "\n\n")
+            targetdirectory, filename = os.path.split(reduction.getOutPath())
+        
+        # Construct a filename from run number if required
+            if reduction.useRunnumberForOutput:
+                filename = reduction.getSansRun().getRunnumber().rstrip('-add')
+
+        # Write out the required files
+            reduction.writeOutputFiles(reduced, targetdirectory, filename)
+
+        # If the reduction is to be blogged out
+            if self.getBlogReduction():
+                post_id = reduction.arrangeOutputPostsToBlog(os.path.join(
+                                                      targetdirectory,
+                                                      filename))
+                self.blogreductionposttable.appendRow(
+                        [reduction.getSansRun().getRunnumber(), 
+                         reduction.getSansTrans().getRunnumber(),
+                         reduction.getBackgroundRun().getRunnumber(),
+                         reduction.getBackgroundTrans().getRunnumber(),
+                         '[blog]' + post_id + '[/blog]'])
+
             # Clear the Mantid workspace before doing further reductions
             if MANTID:
                 mantid.clear()
+
+        #Close up the blog post when done if required
+        if self.getBlogReduction():
+            self.closeAndPostReductionPost()
+            self.blogreductionpost = None
+
+
+
             # TODO - some monitoring and error catching here in case
             # some reductions don't proceed properly
-    
+
+    ################################
+    # Blogging convenience methods #
+    ################################
+
+    def doOutputDataUploadToBlog(self, filepath):
+        datapost = lablogpost.LaBLogData()
+        datapost.set_type('inline')
+        datapost.set_data(filepath)
+        data_id = datapost.doPost(self.blogurl, self.bloguid)
+        if data_id:
+            return data_id
+        else:
+            raise Warning("Failed to upload %s to blog" % filepath)
+            return False
+ 
+    def arrangeOutputPostsToBlog(self, targetpath):
+        """Method to set up the output post in the blog
+
+        First the data is posted to the appropriate blog and
+        the data numbers appended to a list. The actual post
+        that will contain the data is then created and the 
+        post_id returned.
+        """
+
+        datapostlist = []
+        # Need to create a data post for each output object
+        if self.outputLOQ:
+            datapostlist.append(self.doOutputDataUploadToBlog(
+                                     targetpath + '.LOQ'))
+        if self.outputCanSAS:
+            datapostlist.append(self.doOutputDataUploadToBlog(
+                                     targetpath + '.xml'))
+
+        # Set up the blog post that holds the output data
+        outputblogpost = lablogpost.LaBLogPost()
+        outputblogpost.set_username(self.blogusername)
+        if self.getUseRunnumberForOutput():
+            outputblogpost.set_title(self.getSansRun().getRunnumber() + 
+                                     ' - reduced SANS data')
+        else:
+            outputblog.post.set_title(os.path.basename(targetpath) +
+                                      ' - reduced SANS data')
+        outputblogpost.set_section('Data')
+        outputblogpost.set_blog_sname(self.blog_sname)
+        outputblogpost.set_metadata({'Data_type'  : 'SANS',
+                                     'Instrument' : self.getInstrument()})
+        outputblogpost.set_attached_data(datapostlist)
+        content = "Reduced SANS Data\n\n"
+        for datapost in datapostlist:
+            content += "[data]" + datapost + "[/data]\n\n"
+        outputblogpost.set_content(content)
+        outputpost_id = outputblogpost.doPost(self.blogurl, self.bloguid)
+        if outputpost_id:
+            return outputpost_id
+        else:
+            raise Warning("Failed to create the reduced data post")
+            return False
+            
+    def initialiseReductionPost(self):
+        if not self.blogreductionpost:
+            self.blogreductionpost = lablogpost.LaBLogPost()
+            self.blogreductionpost.set_title('SANS Data Reduction')
+            self.blogreductionpost.set_username(self.blogusername)
+            self.blogreductionpost.set_section('Procedure')
+            self.blogreductionpost.set_blog_sname(self.blog_sname)
+            self.blogreductionpost.set_metadata(
+                      {'Procedure' : 'Data_reduction'})
+            self.blogreductionpost.set_content = \
+                """Reduction of SANS raw Data to 1D SANS Pattern"""
+            self.blogreductionposttable = lablogpost.BlogTable(
+                ['SANS Run', 'SANS Trans', 
+                 'Bgd Run', 'Bgd Trans', 'Reduced data'])
+
+    def appendReductionToReductionPost(self, datapost_id):
+        """Append the new reduction entry to table"""
+
+        self.blogreductionposttable.appendRow(
+            [self.getSansRun().getRunnumber(), 
+             self.getSansTrans().getRunnumber(),
+             self.getBackgroundRun().getRunnumber(),
+             self.getBackgroundTrans().getRunnumber(),
+             '[blog]' + datapost_id + '[/blog]'])
+
+    def closeAndPostReductionPost(self):
+        """Finalise the reduction post and send to the blog"""
+
+        table = self.blogreductionposttable.serialize()
+        self.blogreductionpost.append_content(table)
+        self.blogreductionpost.doPost(self.blogurl, self.bloguid)
+        
             
 class SansReduceView(QWidget):
     """The view for the SANS Reduce GUI
@@ -836,8 +962,6 @@ class QueueWindowView(QWidget):
         """
 
         self.doc.doQueuedReductions()
-
-
         self.cancelReductionQueue()
 
 class QueueTableModel(QAbstractTableModel):
