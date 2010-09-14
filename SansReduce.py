@@ -246,11 +246,13 @@ class AbstractScatteringRun(object):
             # If input is a full filename
             if input.startswith('SANS2D'):
                 self.filename = str(input)
+                self.filenameToRunnumber()
 
             # If input is a run number with or without extension
             elif input.rstrip('.nxs').rstrip('.raw').rstrip('-add').isdigit():
                 # setRunnumber will strip the filetype extension
                 self.runnumber = input.rstrip('.nxs').rstrip('.raw')
+                self.runnumberToFilename()
             else: pass
 
             # If input has a filetype extension then setExt
