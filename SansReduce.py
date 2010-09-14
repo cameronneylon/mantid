@@ -78,8 +78,7 @@ class AbstractScatteringRun(object):
     
         if input:
             input = str(input)
-            if input.rstrip('.nxs').rstrip('.raw').rstrip('-add').isdigit():
-                self.mungeNames(input)
+            self.mungeNames(input)
 
 
     ###############
@@ -245,7 +244,7 @@ class AbstractScatteringRun(object):
         if input:
             # If input is a full filename
             if input.startswith('SANS2D'):
-                self.filename = str(input)
+                self.filename = str(input).rstrip('.nxs').rstrip('.raw')
                 self.filenameToRunnumber()
 
             # If input is a run number with or without extension

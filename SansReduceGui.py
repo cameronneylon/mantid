@@ -119,12 +119,21 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         """
 
         self.currentReduction = SansReduce.Standard1DReductionSANS2DRearDetector()
-        self.currentReduction.setDirectBeam(self.directbeam)
-        self.currentReduction.setMaskfile(self.maskfile)
         self.currentReduction.setPathForAllRuns(self.inPath)
+
+        # On the first initialisation directbeam and maskfile are None
+        # so setting them will raise a ValueError in SansReduce.py
+        if self.directbeam:
+            self.currentReduction.setDirectBeam(self.directbeam)
+        if self.maskfile:
+            self.currentReduction.setMaskfile(self.maskfile)
+
 
     def setSansRun(self, qstring):
         self.currentReduction.setSansRun(str(qstring))
+
+    def getSansRun(self):
+        return self.currentReduction.getSansRun()
 
     def setSansTrans(self, qstring):
         self.currentReduction.setSansTrans(str(qstring))
@@ -135,7 +144,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     def setBackgroundTrans(self, qstring):
         self.currentReduction.setBackgroundTrans(str(qstring))
 
-    def setMaskfile(self qstring):
+    def setMaskfile(self, qstring):
         """Set the maskfile in reduction object and doc
 
         The maskfile needs to persist after a given reduction
@@ -147,6 +156,18 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         maskfile = str(qstring)
         self.maskfile = maskfile
         self.currentReduction.setMaskfile(maskfile)
+
+    def getMaskfile(self):
+        """Getter for the document maskfile
+
+        This method is required because we are persisting the
+        record of the maskfile for the queue UI. This returns
+        the value of maskfile held in the SansReduceGui Doc 
+        and _not_ that held in the current reduction object.
+        Currently self.maskfile is simply a string.
+        """
+        
+        return self.maskfile
 
     def setDirectBeam(self, qstring):
         """Set the directbeam in reduction object and doc
@@ -161,6 +182,17 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         self.directbeam = directbeam
         self.currentReduction.setDirectBeam(directbeam)
 
+    def getDirectBeam(self):
+        """Getter for the document directbeam
+
+        This method is required because we are persisting the
+        record of the direct beam for the queue UI. This returns
+        the value of directbeam held in the SansReduceGui Doc 
+        and _not_ that held in the current reduction object.
+        Currently self.directbeam is simply a string.
+        """
+
+        return self.directbeam
 
     ###########################################################
     # Additional getters and setters required for doc methods #
@@ -321,7 +353,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         self.reductionQueue = []
 
     def queueReduction(self):
-        reductionToQueue = deepcopy(self)
+        reductionToQueue = deepcopy(self.currentReduction)
         self.reductionQueue.append(reductionToQueue)
         # self.initForNewDocAfterQueuing
 
@@ -408,14 +440,14 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
         for reduction in self.getReductionQueue():
             reduced = reduction.doReduction()
-            targetdirectory, filename = os.path.split(reduction.getOutPath())
+            targetdirectory = self.getOutPath()
         
         # Construct a filename from run number if required
-            if reduction.useRunnumberForOutput:
+            if self.useRunnumberForOutput:
                 filename = reduction.getSansRun().getRunnumber().rstrip('-add')
 
         # Write out the required files
-            reduction.writeOutputFiles(reduced, targetdirectory, filename)
+            self.writeOutputFiles(reduced, targetdirectory, filename)
 
         # If the reduction is to be blogged out
             if self.getBlogReduction():
@@ -894,7 +926,7 @@ class QueueWindowView(QWidget):
         # Add the relevant connections to populate UI elements
         self.ui.maskFileLineEdit.setText(self.doc.getMaskfile())
         self.ui.directBeamLineEdit.setText(
-                     self.doc.getDirectBeam().getRunnumber())
+                     self.doc.getDirectBeam())
         self.connect(self.ui.maskFilePushButtonQueue,
                      SIGNAL("clicked()"),
                      self.changeMaskFileForQueue)
