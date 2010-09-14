@@ -937,8 +937,8 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
 
         # Setting the background
         SANSReduction.DataPath(self.getBackgroundRun().getPath())
-        SANSReduction.AssignCan(self.getSansRun().getRunnumber() +
-                                 '.' + self.getSansRun().getExt())
+        SANSReduction.AssignCan(self.getBackgroundRun().getRunnumber() +
+                                 '.' + self.getBackgroundRun().getExt())
 
         # Setting the background transmision
         SANSReduction.DataPath(self.getBackgroundRun().trans.getPath())
