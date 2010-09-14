@@ -299,8 +299,9 @@ class AbstractScatteringRun(object):
         # If it doesn't convert runnumber to a standard SANS2D name
         else:
             filename_prefix = 'SANS2D'
-            self.filename = filename_prefix + '0'*(8-len(self.getRunnumber())
-                                          ) + self.getRunnumber()
+            self.filename = filename_prefix + '0'*(
+                            8-len(self.getRunnumber().rstrip('-add'))
+                                      ) + self.getRunnumber()
             return self._testFullPath()
 
 
