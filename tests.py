@@ -279,7 +279,7 @@ class InitialAbstractReductionTests(unittest.TestCase):
     def testSansRunSetup(self):
         self.reduction = SansReduce.AbstractReduction()
         # Test setting with run numbers for Sans and Trans
-        self.reduction.setSansRun('3326.nxs', '3325.nxs')
+        self.reduction.initSansRun('3326.nxs', '3325.nxs')
         self.assertEqual(self.reduction.getSansRun().getRunnumber(), '3326')
         self.assertEqual(self.reduction.getSansRun().trans.getRunnumber(),
                          '3325')
