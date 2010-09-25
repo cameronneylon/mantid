@@ -76,9 +76,6 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
     """
 
     def __init__(self):
-        SansReduce.Standard1DReductionSANS2DRearDetector.__init__(self)
-
-
         self.inPath = DEFAULT_IN_PATH
         self.maskfile = ''
         self.directbeam = ''
@@ -130,19 +127,28 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
 
     def setSansRun(self, qstring):
-        self.currentReduction.setSansRun(str(qstring))
+        self.currentReduction.setSansRun(qstring)
 
     def getSansRun(self):
-        return self.currentReduction.getSansRun()
+        return self.currentReduction.getSansRun().getRunnumber()
 
     def setSansTrans(self, qstring):
-        self.currentReduction.setSansTrans(str(qstring))
+        self.currentReduction.setSansTrans(qstring)
+
+    def getSansTrans(self):
+        return self.currentReduction.getSansTrans().getRunnumber()
 
     def setBackgroundRun(self, qstring):
-        self.currentReduction.setBackgroundRun(str(qstring))
+        self.currentReduction.setBackgroundRun(qstring)
+
+    def getBackgroundRun(self):
+        return self.currentReduction.getBackgroundRun().getRunnumber()
 
     def setBackgroundTrans(self, qstring):
-        self.currentReduction.setBackgroundTrans(str(qstring))
+        self.currentReduction.setBackgroundTrans(qstring)
+
+    def getBackgroundTrans(self):
+        return self.currentReduction.getBackgroundTrans().getRunnumber()
 
     def setMaskfile(self, qstring):
         """Set the maskfile in reduction object and doc
@@ -153,9 +159,8 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         object itself.
         """
 
-        maskfile = str(qstring)
-        self.maskfile = maskfile
-        self.currentReduction.setMaskfile(maskfile)
+        self.maskfile = qstring
+        self.currentReduction.setMaskfile(qstring)
 
     def getMaskfile(self):
         """Getter for the document maskfile
@@ -177,10 +182,13 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         variable outside th reduction object and one in the
         reduction object itself.
         """
+        try:
+            assert type(qstring) == str or type(qstring) == QString
+        except AssertionError:
+            raise TypeError('Run identifier must be a string or QString')
 
-        directbeam = str(qstring)
-        self.directbeam = directbeam
-        self.currentReduction.setDirectBeam(directbeam)
+        self.directbeam = qstring
+        self.currentReduction.setDirectBeam(qstring)
 
     def getDirectBeam(self):
         """Getter for the document directbeam
@@ -193,6 +201,11 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         """
 
         return self.directbeam
+
+    def doReduction(self):
+        """Map doReduction onto the Doc object for neatness"""
+
+        self.currentReduction.doReduction()
 
     ###########################################################
     # Additional getters and setters required for doc methods #
@@ -210,7 +223,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     def setShowRawInMenus(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
         self.showRawInMenus = boolean
         logging.debug("Doc:setShowRawInMenus: setto: " + 
@@ -221,7 +234,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     def setShowNexusInMenus(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
         self.showNexusInMenus = boolean
 
@@ -230,25 +243,25 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     def setOutputLOQ(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
-        self.outputLOQ = bool
+        self.outputLOQ = boolean
 
     def getOutputLOQ(self):
         return self.outputLOQ
 
     def setOutputCanSAS(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
-        self.outputCanSAS = bool
+        self.outputCanSAS = boolean
 
     def getOutputCanSAS(self):
         return self.outputCanSAS
 
     def setUseRunnumberForOutput(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
         self.useRunnumberForOutput = boolean
 
@@ -257,16 +270,16 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     def setBlogReduction(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
-        self.blog = bool
+        self.blog = boolean
 
     def getBlogReduction(self):
         return self.blog
 
     def setQueue(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
         self.queue = boolean
 
@@ -275,9 +288,9 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
 
     def setQueueViewVisible(self, boolean):
         if type(boolean) != bool:
-            raise ValueError('Value must be True or False')
+            raise TypeError('Value must be True or False')
             return
-        self.queueViewVisible = bool
+        self.queueViewVisible = boolean
 
     def getQueueViewVisible(self):
         return self.queueViewVisible
@@ -290,9 +303,12 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         directory.
         """
 
-        if type(string) != string and type(string) != QString:
+        if type(string) != str and type(string) != QString:
             raise TypeError("Path must be a string or QString")
-            return
+
+        if not os.path.exists(string):
+            raise ValueError('Outpath is incorrect or broken!')
+
         self.outPath = str(string)
 
     def getOutPath(self):
@@ -353,7 +369,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         self.reductionQueue = []
 
     def queueReduction(self):
-        reductionToQueue = deepcopy(self.currentReduction)
+        reductionToQueue = deepcopy(self)
         self.reductionQueue.append(reductionToQueue)
         # self.initForNewDocAfterQueuing
 
@@ -373,10 +389,10 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
             raise ValueError("Don't have that many reductions queued")
 
         list = []
-        list.append(self.reductionQueue[index].sans.getRunnumber())
-        list.append(self.reductionQueue[index].sans.trans.getRunnumber())
-        list.append(self.reductionQueue[index].background.getRunnumber())
-        list.append(self.reductionQueue[index].background.trans.getRunnumber())
+        list.append(self.reductionQueue[index].getSansRun())
+        list.append(self.reductionQueue[index].getSansTrans())
+        list.append(self.reductionQueue[index].getBackgroundRun())
+        list.append(self.reductionQueue[index].getBackgroundTrans())
         return list
 
     def writeOutputFiles(self, reduced, targetdirectory, filename):
@@ -439,12 +455,12 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
             self.initialiseReductionPost()
 
         for reduction in self.getReductionQueue():
-            reduced = reduction.doReduction()
+            reduced = reduction.currentReduction.doReduction()
             targetdirectory = self.getOutPath()
         
         # Construct a filename from run number if required
             if self.useRunnumberForOutput:
-                filename = reduction.getSansRun().getRunnumber().rstrip('-add')
+                filename = reduction.getSansRun().rstrip('-add')
 
         # Write out the required files
             self.writeOutputFiles(reduced, targetdirectory, filename)
@@ -455,10 +471,10 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
                                                       targetdirectory,
                                                       filename))
                 self.blogreductionposttable.appendRow(
-                        [reduction.getSansRun().getRunnumber(), 
-                         reduction.getSansTrans().getRunnumber(),
-                         reduction.getBackgroundRun().getRunnumber(),
-                         reduction.getBackgroundTrans().getRunnumber(),
+                        [reduction.getSansRun(), 
+                         reduction.getSansTrans(),
+                         reduction.getBackgroundRun(),
+                         reduction.getBackgroundTrans(),
                          '[blog]' + post_id + '[/blog]'])
 
             # Clear the Mantid workspace before doing further reductions
@@ -512,7 +528,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         outputblogpost = lablogpost.LaBLogPost()
         outputblogpost.set_username(self.blogusername)
         if self.getUseRunnumberForOutput():
-            outputblogpost.set_title(self.getSansRun().getRunnumber() + 
+            outputblogpost.set_title(self.getSansRun() + 
                                      ' - reduced SANS data')
         else:
             outputblog.post.set_title(os.path.basename(targetpath) +
@@ -520,7 +536,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         outputblogpost.set_section('Data')
         outputblogpost.set_blog_sname(self.blog_sname)
         outputblogpost.set_metadata({'Data_type'  : 'SANS',
-                                     'Instrument' : self.getInstrument()})
+                              'Instrument' : self.currentReduction.getInstrument()})
         outputblogpost.set_attached_data(datapostlist)
         content = "Reduced SANS Data\n\n"
         for datapost in datapostlist:
@@ -552,10 +568,10 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         """Append the new reduction entry to table"""
 
         self.blogreductionposttable.appendRow(
-            [self.getSansRun().getRunnumber(), 
-             self.getSansTrans().getRunnumber(),
-             self.getBackgroundRun().getRunnumber(),
-             self.getBackgroundTrans().getRunnumber(),
+            [self.getSansRun(), 
+             self.getSansTrans(),
+             self.getBackgroundRun(),
+             self.getBackgroundTrans(),
              '[blog]' + datapost_id + '[/blog]'])
 
     def closeAndPostReductionPost(self):
@@ -1029,7 +1045,10 @@ class QueueTableModel(QAbstractTableModel):
     
 
 app = QApplication.instance()
+# If running outside of Mantid need a QApp
 if app == None:
+ # But if running tests we don't want that...
+ if sys.argv[0] != 'tests.py':
    app = QApplication(sys.argv) 
    LOG_FILENAME = '/logging.out'
    logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)

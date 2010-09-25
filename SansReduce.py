@@ -555,7 +555,7 @@ class AbstractReduction:
         return self.background.trans
 
     def setDirectBeam(self, runnumber):
-        """Method for setting and initialising the SANS run
+        """Method for setting and initialising the directbeam run
         """
 
         # If there is an input make sure it is a string or QString
@@ -564,7 +564,6 @@ class AbstractReduction:
                 assert type(runnumber) == str or type(runnumber) == QString
             except AssertionError:
                 raise TypeError('Run identifier must be a string or QString')
-
         self.directbeam.setRunnumber(runnumber)
 
     def getDirectBeam(self):
@@ -649,6 +648,11 @@ class AbstractReduction:
         The lower level functions UserPath(path) and MaskFile(filename) are 
         then called.
         """
+
+        try:
+            assert type(path) == str or type(path) == QString
+        except AssertionError:
+            raise TypeError('Path must be a string or QString')
 
         path = str(path)
         try:
@@ -855,18 +859,14 @@ class Standard1DReductionSANS2DRearDetector(AbstractReduction):
         if not self.getSansTrans().getFilename():
             self.getSansTrans().mungeNames()
 
-
         if not self.getBackgroundRun().getFilename():
             self.getBackgroundRun().mungeNames()
-
 
         if not self.getBackgroundTrans().getFilename():
             self.getBackgroundTrans().mungeNames()
 
-
         if not self.getDirectBeam().getFilename():
             self.getDirectBeam().mungeNames()
-
 
         if not self.getInstrument():
             raise Warning('No instrument has been set')

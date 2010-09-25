@@ -17,6 +17,8 @@
 
 import unittest
 import os
+import SansReduce
+import SansReduceGui
 
 # Tests for SansReduce.py
 # 
@@ -25,8 +27,6 @@ import os
 # load or write data, or manipulate workspaces will not. These are
 # not protected outside of Mantid so will fail visibly in tests run
 # outside of Mantid
-
-import SansReduce
 
 class SetupSansReduceTestCase(unittest.TestCase):
     """A shared set up and tear down class for the tests
@@ -339,6 +339,12 @@ class InitialAbstractReductionTests(unittest.TestCase):
         self.reduction.setGravity(True)
         self.assertEqual(self.reduction.getGravity(), True)
 
+        self.reduction = SansReduce.AbstractReduction()
+        self.reduction.setGravity(False)
+        self.assertEqual(self.reduction.getGravity(), False)
+
+        self.assertRaises(TypeError, self.reduction.setGravity, 3)
+
     def testVerbose(self):
         """Quick test that verbose can be set and got"""
 
@@ -346,21 +352,223 @@ class InitialAbstractReductionTests(unittest.TestCase):
         self.reduction.setVerbose(True)
         self.assertEqual(self.reduction.getVerbose(), True)
 
+        self.reduction = SansReduce.AbstractReduction()
+        self.reduction.setVerbose(False)
+        self.assertEqual(self.reduction.getVerbose(), False)
+
+        self.assertRaises(TypeError, self.reduction.setVerbose, 3)
+
     def testReduction(self):
-        """Test of reduction process
+        """Test of reduction process and error raising
         """
-        self.reduction = SansReduce.Standard1DReductionSANS2DRearDetector(
-                     '3333.nxs', # Sans run
-                     '3325.nxs', # Bgd run
-                     '3332.nxs', # direct beam
-                     '3328.nxs', # SANS transmission
-                     '3331.nxs') # Bgd transmission
-        self.reduction.setMaskfile('test_data/MASKSANS2d_095B.txt')
+        self.reduction = SansReduce.Standard1DReductionSANS2DRearDetector()
 
         self.assertRaises(Warning, self.reduction.doReduction)
-        
+        self.reduction.setSansRun('3333.nxs')
+        self.assertRaises(Warning, self.reduction.doReduction)
+        self.reduction.setBackgroundRun( '3325.nxs')
+        self.assertRaises(Warning, self.reduction.doReduction)
+        self.reduction.setDirectBeam('3332.nxs')
+        self.assertRaises(Warning, self.reduction.doReduction)
+        self.reduction.setSansTrans('3328.nxs')
+        self.assertRaises(Warning, self.reduction.doReduction)
+        self.reduction.setBackgroundTrans('3331.nxs')
+        self.assertRaises(ValueError, self.reduction.doReduction)
+        self.reduction.setMaskfile('test_data/MASKSANS2d_095B.txt')
+        self.assertRaises(Warning, self.reduction.doReduction)
         self.reduction.setPathForAllRuns('test_data/')
         self.reduction.doReduction()
+
+class SansReduceGuiDocTest(unittest.TestCase):
+    """Test Class for Getters and Setters in SansReduceGuiDoc"""
+
+    def setUp(self):
+        """Set up some standard objects and cases"""
+
+        self.testdoc = SansReduceGui.SansReduceDoc()
+
+        
+    def testInit(self):
+        """Test the initialised state of the Doc"""
+        
+        self.assertEqual(self.testdoc.inPath, SansReduceGui.DEFAULT_IN_PATH)
+        self.assertEqual(self.testdoc.maskfile, '')
+        self.assertEqual(self.testdoc.directbeam, '')
+        self.assertEqual(self.testdoc.showRawInMenus, True)
+        self.assertEqual(self.testdoc.showNexusInMenus, False)
+        self.assertEqual(self.testdoc.outputLOQ, False)
+        self.assertEqual(self.testdoc.outputCanSAS, True)
+        self.assertEqual(self.testdoc.useRunnumberForOutput, True)
+        self.assertEqual(self.testdoc.blog, False)
+        self.assertEqual(self.testdoc.queue, False)
+        self.assertEqual(self.testdoc.reductionQueue, [])
+        self.assertEqual(self.testdoc.queueViewVisible, False)
+        self.assertEqual(self.testdoc.outPath, '')
+        self.assertEqual(self.testdoc._inPathFileList, '')
+
+        # Not currently testing blog variables because these will change
+
+    def testGetAndSetCurrentReduction(self):
+        """Test that getters and setters behave themselves
+
+        These methods test that the getters and setters that relate to
+        the currentReduction internal object are behaving correctly. The
+        major issues are the directbeam and maskfile objects that are
+        held both by the current reduction object and by the Doc for 
+        passing between reductions in queues."""
+
+        self.testdoc.setSansRun('3325')
+        self.assertEqual(self.testdoc.getSansRun(), '3325')
+        self.testdoc.setSansRun('3325.nxs')
+        self.assertEqual(self.testdoc.getSansRun(), '3325')
+        self.assertRaises(TypeError, self.testdoc.setSansRun, 3325)
+        self.assertEqual(self.testdoc.getSansRun(), '3325')  
+        self.assertRaises(TypeError, self.testdoc.setSansRun, True)
+
+        self.testdoc.setSansTrans('3325')
+        self.assertEqual(self.testdoc.getSansTrans(), '3325')
+        self.testdoc.setSansTrans('3325.nxs')
+        self.assertEqual(self.testdoc.getSansTrans(), '3325')
+        self.assertRaises(TypeError, self.testdoc.setSansTrans, 3325)
+        self.assertEqual(self.testdoc.getSansTrans(), '3325')  
+        self.assertRaises(TypeError, self.testdoc.setSansTrans, True)
+
+        self.testdoc.setBackgroundRun('3325')
+        self.assertEqual(self.testdoc.getBackgroundRun(), '3325')
+        self.testdoc.setBackgroundRun('3325.nxs')
+        self.assertEqual(self.testdoc.getBackgroundRun(), '3325')
+        self.assertRaises(TypeError, self.testdoc.setBackgroundRun, 3325)
+        self.assertEqual(self.testdoc.getBackgroundRun(), '3325')  
+        self.assertRaises(TypeError, self.testdoc.setBackgroundRun, True)
+
+        self.testdoc.setBackgroundTrans('3325')
+        self.assertEqual(self.testdoc.getBackgroundTrans(), '3325')
+        self.testdoc.setBackgroundTrans('3325.nxs')
+        self.assertEqual(self.testdoc.getBackgroundTrans(), '3325')
+        self.assertRaises(TypeError, self.testdoc.setBackgroundTrans, 3325)
+        self.assertEqual(self.testdoc.getBackgroundTrans(), '3325')  
+        self.assertRaises(TypeError, self.testdoc.setBackgroundTrans, True)
+
+        self.testdoc.setDirectBeam('3325')
+        self.assertEqual(self.testdoc.getDirectBeam(), '3325')
+        self.assertEqual(self.testdoc.currentReduction.getDirectBeam(
+                                   ).getRunnumber(), '3325')
+        self.testdoc.setDirectBeam('3326.nxs')
+        # This behaviour is different because testdoc.directbeam is 
+        # just the string being stored
+        self.assertEqual(self.testdoc.getDirectBeam(), '3326.nxs')
+        self.assertEqual(self.testdoc.currentReduction.getDirectBeam(
+                                   ).getRunnumber(), '3326')
+        self.assertRaises(TypeError, self.testdoc.setDirectBeam, 3325)
+        self.assertEqual(self.testdoc.getDirectBeam(), '3326.nxs')  
+        self.assertRaises(TypeError, self.testdoc.setDirectBeam, True)
+
+        self.assertRaises(ValueError, self.testdoc.setMaskfile, '/some/bad/path')
+        self.testdoc.setMaskfile('test_data/MASKSANS2D_095B.txt')
+        self.assertEqual(self.testdoc.getMaskfile(), 'test_data/MASKSANS2D_095B.txt')
+        self.assertEqual(self.testdoc.currentReduction.getMaskfile(),
+                                           'test_data/MASKSANS2D_095B.txt')
+        self.testdoc.setMaskfile('test_data/3326.nxs')
+        # This behaviour is different because testdoc.maskfile is 
+        # just the string being stored
+        self.assertEqual(self.testdoc.getMaskfile(), 'test_data/3326.nxs')
+        self.assertEqual(self.testdoc.currentReduction.getMaskfile( ), 
+                                                'test_data/3326.nxs')
+        self.assertEqual(self.testdoc.getMaskfile(), 'test_data/3326.nxs')  
+        self.assertRaises(TypeError, self.testdoc.setMaskfile, True)
+
+
+    def testGetAndSetDoc(self):
+        """Test the remaining getters and setters from the Doc"""
+        
+        # Testing setInPath
+        self.assertRaises(TypeError, self.testdoc.setInPath, 55)
+        self.assertRaises(TypeError, self.testdoc.setInPath, True)
+        self.assertRaises(ValueError, self.testdoc.setInPath, 'false/path')
+        self.testdoc.setInPath('test_data') # path checked in SansReduce.py
+        self.assertEqual(self.testdoc.getInPath(), 'test_data')
+        self.testdoc.setInPath('/')
+        self.assertEqual(self.testdoc.getInPath(), '/')
+
+        # Testing setShowRawInMenus
+        self.assertRaises(TypeError, self.testdoc.setShowRawInMenus, 55)
+        self.assertRaises(TypeError, self.testdoc.setShowRawInMenus, 'string')
+        self.testdoc.setShowRawInMenus(False)
+        self.assertEqual(self.testdoc.getShowRawInMenus(), False)
+        self.testdoc.setShowRawInMenus(True)
+        self.assertEqual(self.testdoc.getShowRawInMenus(), True)
+
+        # Testing setShowNexusInMenus
+        self.assertRaises(TypeError, self.testdoc.setShowNexusInMenus, 55)
+        self.assertRaises(TypeError, self.testdoc.setShowNexusInMenus, 'string')
+        self.testdoc.setShowNexusInMenus(False)
+        self.assertEqual(self.testdoc.getShowNexusInMenus(), False)
+        self.testdoc.setShowNexusInMenus(True)
+        self.assertEqual(self.testdoc.getShowNexusInMenus(), True)
+
+        # Testing setOutputLOQ
+        self.assertRaises(TypeError, self.testdoc.setOutputLOQ, 55)
+        self.assertRaises(TypeError, self.testdoc.setOutputLOQ, 'string')
+        self.testdoc.setOutputLOQ(False)
+        self.assertEqual(self.testdoc.getOutputLOQ(), False)
+        self.testdoc.setOutputLOQ(True)
+        self.assertEqual(self.testdoc.getOutputLOQ(), True)
+
+        # Testing setOutputCanSAS
+        self.assertRaises(TypeError, self.testdoc.setOutputCanSAS, 55)
+        self.assertRaises(TypeError, self.testdoc.setOutputCanSAS, 'string')
+        self.testdoc.setOutputCanSAS(False)
+        self.assertEqual(self.testdoc.getOutputCanSAS(), False)
+        self.testdoc.setOutputCanSAS(True)
+        self.assertEqual(self.testdoc.getOutputCanSAS(), True)
+
+        # Testing setUseRunnumberForOutput
+        self.assertRaises(TypeError, self.testdoc.setUseRunnumberForOutput, 55)
+        self.assertRaises(TypeError, self.testdoc.setUseRunnumberForOutput, 'string')
+        self.testdoc.setUseRunnumberForOutput(False)
+        self.assertEqual(self.testdoc.getUseRunnumberForOutput(), False)
+        self.testdoc.setUseRunnumberForOutput(True)
+        self.assertEqual(self.testdoc.getUseRunnumberForOutput(), True)
+
+        # Testing setBlogReduction
+        self.assertRaises(TypeError, self.testdoc.setBlogReduction, 55)
+        self.assertRaises(TypeError, self.testdoc.setBlogReduction, 'string')
+        self.testdoc.setBlogReduction(False)
+        self.assertEqual(self.testdoc.getBlogReduction(), False)
+        self.testdoc.setBlogReduction(True)
+        self.assertEqual(self.testdoc.getBlogReduction(), True)
+
+        # Testing setQueue
+        self.assertRaises(TypeError, self.testdoc.setQueue, 55)
+        self.assertRaises(TypeError, self.testdoc.setQueue, 'string')
+        self.testdoc.setQueue(False)
+        self.assertEqual(self.testdoc.getQueue(), False)
+        self.testdoc.setQueue(True)
+        self.assertEqual(self.testdoc.getQueue(), True)
+        
+        # Testing setQueueViewVisible
+        self.assertRaises(TypeError, self.testdoc.setQueueViewVisible, 55)
+        self.assertRaises(TypeError, self.testdoc.setQueueViewVisible, 'string')
+        self.testdoc.setQueueViewVisible(False)
+        self.assertEqual(self.testdoc.getQueueViewVisible(), False)
+        self.testdoc.setQueueViewVisible(True)
+        self.assertEqual(self.testdoc.getQueueViewVisible(), True)
+
+        # Testing setOutPath
+        self.assertEqual(self.testdoc.outPath, '')
+        self.testdoc.setInPath('test_data/')
+        self.assertEqual(self.testdoc.getOutPath(), 'test_data/')                 
+        self.assertRaises(TypeError, self.testdoc.setOutPath, 55)
+        self.assertRaises(TypeError, self.testdoc.setOutPath, True)
+        self.assertRaises(ValueError, self.testdoc.setOutPath, 'false/path')
+        self.testdoc.setOutPath('test_data') # path checked in SansReduce.py
+        self.assertEqual(self.testdoc.getOutPath(), 'test_data')
+        self.testdoc.setInPath('/')
+        self.assertEqual(self.testdoc.getOutPath(), 'test_data')
+        self.testdoc.setOutPath('/')
+        self.assertEqual(self.testdoc.getOutPath(), '/')
+        
+
 
 if __name__ == '__main__':
     unittest.main()
