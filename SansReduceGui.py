@@ -20,7 +20,7 @@
 #
 # Global Variables the user may wish to set
 #
-DEFAULT_IN_PATH = '/Users/Cameron/Documents/AA - ISIS Docs/Experiments/'
+DEFAULT_IN_PATH = '/Users/Cameron/Documents/AA-ISIS-Docs/Experiments/'
 
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
@@ -333,6 +333,10 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         This filter method is called from getRunListForMenu.
         """
 
+        if type(string) != str:
+            raise TypeError("Filter method includeRun requires a string")
+
+
         if string.endswith('.raw') and self.getShowRawInMenus():
             logging.debug("ends with raw and " + str(self.getShowRawInMenus()))
             return True
@@ -349,11 +353,13 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         filesindir = os.listdir(self.getInPath())
         files = filter(self.includeRun, filesindir)
 
-        files.sort()
         filesformenu = []
         for file in files:
             file = file.lstrip('SANS2D0')
             filesformenu.append(file)
+
+        # Sort the numbers into correct order
+        filesformenu.sort()
         return filesformenu
 
     ############################
@@ -429,7 +435,7 @@ class SansReduceDoc(SansReduce.Standard1DReductionSANS2DRearDetector):
         
         # Construct a filename from run number if required
         if self.useRunnumberForOutput:
-            filename = self.getSansRun().getRunnumber().rstrip('-add')
+            filename = self.getSansRun().rstrip('-add')
 
         # Write out the required files
         self.writeOutputFiles(reduced, targetdirectory, filename)
@@ -1059,6 +1065,9 @@ if app == None:
    app.exec_()
 
 else:
+   LOG_FILENAME = '/logging.out'
+   logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
+ 
    doc = SansReduceDoc()
    docview = SansReduceView(doc)
    docview.show()  

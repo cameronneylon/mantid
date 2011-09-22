@@ -39,7 +39,7 @@ class SetupSansReduceTestCase(unittest.TestCase):
         self.testpath = 'test_data'
         self.testfullrelativepath = os.path.join(self.testpath, 
                                                  self.testfilename +
-                                                 '.' + self.testext[0])
+                                                 '.' + self.testext[1])
         self.testint = 1
         self.testfloat = 1.4
 
@@ -228,7 +228,7 @@ class TestAbstractScatteringGettersSetters(SetupSansReduceTestCase):
         # and that _buildFullPath and _testFullPath do what is expected
         self.scattering = SansReduce.AbstractScatteringRun(self.testrunno)
         self.scattering.setPath(self.testpath)
-        self.scattering.setExt(self.testext[0])
+        self.scattering.setExt(self.testext[1])
 
         self.assertEqual(self.scattering._buildFullPath(), 
                          self.testfullrelativepath)
@@ -366,9 +366,9 @@ class InitialAbstractReductionTests(unittest.TestCase):
         self.assertRaises(Warning, self.reduction.doReduction)
         self.reduction.setSansRun('3333.nxs')
         self.assertRaises(Warning, self.reduction.doReduction)
-        self.reduction.setBackgroundRun( '3325.nxs')
+        self.reduction.setBackgroundRun( '3325.raw')
         self.assertRaises(Warning, self.reduction.doReduction)
-        self.reduction.setDirectBeam('3332.nxs')
+        self.reduction.setDirectBeam('3332.raw')
         self.assertRaises(Warning, self.reduction.doReduction)
         self.reduction.setSansTrans('3328.nxs')
         self.assertRaises(Warning, self.reduction.doReduction)
@@ -568,7 +568,93 @@ class SansReduceGuiDocTest(unittest.TestCase):
         self.testdoc.setOutPath('/')
         self.assertEqual(self.testdoc.getOutPath(), '/')
         
+class SansReduceGuiMenuDocTest(unittest.TestCase):
+    """Test Class for Menu utility methods for SansReduceGuiDoc"""
 
+    def setUp(self):
+        """Set up some standard objects and cases"""
+
+        self.testdoc = SansReduceGui.SansReduceDoc()
+        self.testdoc.setInPath('test_data')
+        self.nexusteststring = 'nxsteststring.nxs'
+        self.nx5teststring = 'nx5teststring.nx5'
+        self.rawteststring = 'rawteststrging.raw'
+        self.teststringdot = 'teststringdot.'
+        self.leadingdotstring = '.teststringleaddot'
+        self.emptyteststring = ''
+        self.testfloat = 5.0
+
+    def testIncludeRun(self):
+        """Test the filter method that chooses what to populate dropdowns
+
+        Method needs to test each of the possible setting for what is to be
+        shown in the menus.
+        """
+
+        self.testdoc.setShowRawInMenus(True)
+        self.testdoc.setShowNexusInMenus(False)
+        self.assertEqual(self.testdoc.includeRun(self.nexusteststring), False)
+        self.assertEqual(self.testdoc.includeRun(self.nx5teststring), False)
+        self.assertEqual(self.testdoc.includeRun(self.rawteststring), True)
+        self.assertEqual(self.testdoc.includeRun(self.teststringdot), False)
+        self.assertEqual(self.testdoc.includeRun(self.leadingdotstring), False)
+        self.assertEqual(self.testdoc.includeRun(self.emptyteststring), False)
+
+        self.testdoc.setShowRawInMenus(False)
+        self.testdoc.setShowNexusInMenus(True)
+        self.assertEqual(self.testdoc.includeRun(self.nexusteststring), True)
+        self.assertEqual(self.testdoc.includeRun(self.nx5teststring), True)
+        self.assertEqual(self.testdoc.includeRun(self.rawteststring), False)
+        self.assertEqual(self.testdoc.includeRun(self.teststringdot), False)
+        self.assertEqual(self.testdoc.includeRun(self.leadingdotstring), False)
+        self.assertEqual(self.testdoc.includeRun(self.emptyteststring), False)
+
+        self.testdoc.setShowRawInMenus(True)
+        self.testdoc.setShowNexusInMenus(True)
+        self.assertEqual(self.testdoc.includeRun(self.nexusteststring), True)
+        self.assertEqual(self.testdoc.includeRun(self.nx5teststring), True)
+        self.assertEqual(self.testdoc.includeRun(self.rawteststring), True)
+        self.assertEqual(self.testdoc.includeRun(self.teststringdot), False)
+        self.assertEqual(self.testdoc.includeRun(self.leadingdotstring), False)
+        self.assertEqual(self.testdoc.includeRun(self.emptyteststring), False)
+
+        self.testdoc.setShowRawInMenus(False)
+        self.testdoc.setShowNexusInMenus(False)
+        self.assertEqual(self.testdoc.includeRun(self.nexusteststring), False)
+        self.assertEqual(self.testdoc.includeRun(self.nx5teststring), False)
+        self.assertEqual(self.testdoc.includeRun(self.rawteststring), False)
+        self.assertEqual(self.testdoc.includeRun(self.teststringdot), False)
+        self.assertEqual(self.testdoc.includeRun(self.leadingdotstring), False)
+        self.assertEqual(self.testdoc.includeRun(self.emptyteststring), False)
+
+        self.assertRaises(TypeError, self.testdoc.includeRun, self.testfloat)
+        self.assertRaises(TypeError, self.testdoc.includeRun, True)
+        
+    def testGetRunListForMenu(self):
+        """Tests for getRunListForMenu"""
+
+        self.testdoc.setShowRawInMenus(True)
+        self.testdoc.setShowNexusInMenus(False)
+        self.assertEqual(self.testdoc.getRunListForMenu(), 
+                 ['3325.raw', '3328.raw', '3329.raw', '3332.raw', '3333.raw'])
+
+        self.testdoc.setShowRawInMenus(False)
+        self.testdoc.setShowNexusInMenus(True)
+        self.assertEqual(self.testdoc.getRunListForMenu(), 
+                 ['3326.nxs', '3328.nxs', '3331.nxs', '3333.nxs'])
+
+        self.testdoc.setShowRawInMenus(True)
+        self.testdoc.setShowNexusInMenus(True)
+        self.assertEqual(self.testdoc.getRunListForMenu(), 
+                 ['3325.raw', '3326.nxs', '3328.nxs', '3328.raw', '3329.raw', 
+                  '3331.nxs', '3332.raw', '3333.nxs', '3333.raw'])
+
+        self.testdoc.setShowRawInMenus(False)
+        self.testdoc.setShowNexusInMenus(False)
+        self.assertEqual(self.testdoc.getRunListForMenu(), 
+                 [])
+
+# class QueueTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()

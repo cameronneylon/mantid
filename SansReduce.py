@@ -23,7 +23,7 @@ import shutil
 from PyQt4.QtCore import *
 
 try:
-    import SANSReduction
+    import ISISCommandInterface as SANSReduction
 except ImportError: #If testing outside of Mantid use the test module instead
     import SANSReduction_for_testing_only as SANSReduction
 
