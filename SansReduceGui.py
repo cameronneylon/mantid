@@ -1065,8 +1065,8 @@ if app == None:
    app.exec_()
 
 else:
-   LOG_FILENAME = '/logging.out'
-   logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
+   #LOG_FILENAME = '/logging.out'
+   #logging.basicConfig(filename=LOG_FILENAME,level=logging.DEBUG)
  
    doc = SansReduceDoc()
    docview = SansReduceView(doc)

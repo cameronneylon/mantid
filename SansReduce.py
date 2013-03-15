@@ -789,7 +789,7 @@ class AbstractReduction:
         self.verbose = boolean
 
     def getVerbose(self):
-        """Function returns whether gravity is being taken into account
+        """Function returns whether verbose is set
 
         Checks whether the local internal variable is set to the same thing
         as the lower level (global) variable. If not it will return the global
